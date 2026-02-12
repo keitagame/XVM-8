@@ -1,1111 +1,225 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <title>XVM-8S 完全仕様書</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="icon" href="nes.png" type="image/png">
-    <style>
-       :root {
-        color-scheme: light dark;
-      }
-      @font-face {
+<head>
+  <meta charset="utf-8" />
+  <title>XVM-8S 仕様書</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    @font-face {
         font-family: "Renner";
         src: url("./Renner.ttf") format("truetype");
         font-display: swap;
       }
-      body {
-        background: rgb(0, 0, 0);
-        font-family: "Renner", sans-serif;
-        margin: 0;
-        padding: 0;
-        color: #fff;
-      }
-      h1 {
-        font-weight: 300;
-        font-size: 25px;
-        margin: 12px;
-      }
-      header {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        margin-bottom: 12px;
-        padding: 0 12px;
-        border-bottom: 1px solid #333;
-        padding-bottom: 12px;
-      }
-      .mono {
-        font-size: 20px;
-      }
-      
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      
-      .spec-section {
-        margin-bottom: 40px;
-        border: 1px solid #333;
-        padding: 20px;
-        background: #0a0a0a;
-      }
-      
-      .spec-section h2 {
-        font-size: 22px;
-        font-weight: 400;
-        margin-top: 0;
-        border-bottom: 2px solid #444;
-        padding-bottom: 10px;
-        color: #0f0;
-      }
-      
-      .spec-section h3 {
-        font-size: 18px;
-        font-weight: 400;
-        margin-top: 25px;
-        color: #0ff;
-      }
-      
-      .spec-section h4 {
-        font-size: 16px;
-        font-weight: 400;
-        margin-top: 20px;
-        color: #ff0;
-      }
-      
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 15px 0;
-        font-size: 14px;
-      }
-      
-      th, td {
-        border: 1px solid #444;
-        padding: 8px 12px;
-        text-align: left;
-      }
-      
-      th {
-        background: #1a1a1a;
-        font-weight: 500;
-      }
-      
-      tr:hover {
-        background: #151515;
-      }
-      
-      code {
-        background: #1a1a1a;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-family: 'Courier New', monospace;
-        color: #0f0;
-      }
-      
-      pre {
-        background: #0f0f0f;
-        border: 1px solid #333;
-        padding: 15px;
-        overflow-x: auto;
-        font-family: 'Courier New', monospace;
-        font-size: 13px;
-        line-height: 1.5;
-      }
-      
-      .note {
-        background: #1a1a00;
-        border-left: 4px solid #ff0;
-        padding: 12px 15px;
-        margin: 15px 0;
-        font-size: 14px;
-      }
-      
-      .important {
-        background: #1a0000;
-        border-left: 4px solid #f00;
-        padding: 12px 15px;
-        margin: 15px 0;
-        font-size: 14px;
-      }
-      
-      .example {
-        background: #001a1a;
-        border-left: 4px solid #0ff;
-        padding: 12px 15px;
-        margin: 15px 0;
-        font-size: 14px;
-      }
-      
-      ul, ol {
-        line-height: 1.8;
-      }
-      
-      .nav {
-        position: fixed;
-        right: 20px;
-        top: 80px;
-        background: #0a0a0a;
-        border: 1px solid #333;
-        padding: 15px;
-        max-width: 200px;
-        font-size: 12px;
-      }
-      
-      .nav a {
-        color: #0ff;
-        text-decoration: none;
-        display: block;
-        padding: 5px 0;
-      }
-      
-      .nav a:hover {
-        color: #0f0;
-      }
-      
-      @media (max-width: 1400px) {
-        .nav {
-          display: none;
-        }
-      }
-    </style>
-  </head>
-  <body>
-   
-    <header>
-      <h1>XVM-8S 完全仕様書 v2.0</h1>
-      <span class="mono" style="font-size:14px; opacity:0.7;">Simple 8-bit Virtual Machine Specification</span>
-    </header>
+    body {
+      background: #000;
+      font-family: "Renner",sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #fff;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 300;
+      border-bottom: 2px solid #0f0;
+      padding-bottom: 10px;
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 400;
+      color: #0ff;
+      margin-top: 40px;
+    }
+    h3 {
+      font-size: 18px;
+      font-weight: 400;
+      color: #ff0;
+      margin-top: 30px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background: #1a1a1a;
+      font-weight: 500;
+    }
+    code {
+      background: #1a1a1a;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      color: #0f0;
+    }
+    pre {
+      background: #0f0f0f;
+      border: 1px solid #333;
+      padding: 15px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .note {
+      background: #1a1a00;
+      border-left: 4px solid #ff0;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+    .important {
+      background: #1a0000;
+      border-left: 4px solid #f00;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>XVM-8S 仕様書</h1>
+    <p style="color: #888;">超シンプルな8bitバーチャルマシン - グラフィック専用版</p>
 
-    <nav class="nav">
-      <div style="font-weight:bold; margin-bottom:10px;">目次</div>
-      <a href="#philosophy">設計理念</a>
-      <a href="#cpu">CPU仕様</a>
-      <a href="#memory">メモリマップ</a>
-      <a href="#display">表示仕様</a>
-      <a href="#io">I/O仕様</a>
-      <a href="#interrupt">割り込み</a>
-      <a href="#instruction">命令セット</a>
-      <a href="#bios">BIOS仕様</a>
-      <a href="#rom">ROMフォーマット</a>
-      <a href="#implementation">実装ガイド</a>
-      <a href="#examples">実装例</a>
-    </nav>
+    <div class="note">
+      <strong>コンセプト:</strong> 初心者が1日で実装できる最小限のバーチャルマシン。グラフィック描画のみに特化し、命令数は20個以下。
+    </div>
 
-    <div class="container">
+    <h2>1. 基本仕様</h2>
+    
+    <h3>CPU</h3>
+    <ul>
+      <li>8bit CPU</li>
+      <li>アドレス空間: 16bit (64KB)</li>
+      <li>クロック: 1MHz / リフレッシュ: 60Hz</li>
+    </ul>
 
-      <!-- 1. 設計理念 -->
-      <section class="spec-section" id="philosophy">
-        <h2>1. 設計理念</h2>
-        
-        <p>XVM-8Sは、初心者がエミュレータを簡単に実装できることを最優先に設計された8bitバーチャルマシンです。</p>
-        
-        <h3>コンセプト</h3>
-        <ul>
-          <li><strong>最小限の命令数</strong>: 実装すべき命令は40以下</li>
-          <li><strong>固定サイクル制</strong>: 全命令が固定サイクル数で実行完了</li>
-          <li><strong>シンプルなメモリマップ</strong>: 明確な領域分離</li>
-          <li><strong>教育的価値</strong>: コンピュータの基礎が学べる</li>
-          <li><strong>実用性</strong>: 簡易OS・BASIC・ゲームが作れる</li>
-        </ul>
+    <h3>レジスタ</h3>
+    <table>
+      <tr><th>名前</th><th>サイズ</th><th>説明</th></tr>
+      <tr><td><code>A</code></td><td>8bit</td><td>汎用レジスタ</td></tr>
+      <tr><td><code>B</code></td><td>8bit</td><td>汎用レジスタ</td></tr>
+      <tr><td><code>X</code></td><td>8bit</td><td>インデックスレジスタ</td></tr>
+      <tr><td><code>PC</code></td><td>16bit</td><td>プログラムカウンタ（初期値: 0xE000）</td></tr>
+      <tr><td><code>F</code></td><td>8bit</td><td>フラグ（bit0=Zero）</td></tr>
+    </table>
 
-        <div class="note">
-          <strong>目標：</strong>プログラミング初心者でも、この仕様書を読むだけで2〜3日でエミュレータが実装できる
-        </div>
-      </section>
+    <h3>メモリマップ</h3>
+    <table>
+      <tr><th>アドレス</th><th>サイズ</th><th>説明</th></tr>
+      <tr><td>0x0000-0x7FFF</td><td>32KB</td><td>RAM</td></tr>
+      <tr><td>0x8000-0xBFFF</td><td>16KB</td><td><strong>VRAM（グラフィック専用）</strong></td></tr>
+      <tr><td>0xC000-0xC00F</td><td>16B</td><td>パレット（16色）</td></tr>
+      <tr><td>0xE000-0xFFFF</td><td>8KB</td><td>ROM（プログラム領域）</td></tr>
+    </table>
 
-      <!-- 2. CPU仕様 -->
-      <section class="spec-section" id="cpu">
-        <h2>2. CPU仕様</h2>
-        
-        <h3>基本仕様</h3>
-        <ul>
-          <li>8bit CPU</li>
-          <li>アドレス空間: 16bit (64KB)</li>
-          <li>データフォーマット: Little Endian</li>
-          <li>クロック周波数: 1MHz (理論値)</li>
-          <li>リフレッシュレート: 60Hz</li>
-        </ul>
+    <h2>2. グラフィック仕様</h2>
 
-        <h3>レジスタ構成</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>名称</th>
-              <th>ビット幅</th>
-              <th>説明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>A</code></td>
-              <td>8bit</td>
-              <td>汎用レジスタ（アキュムレータ）</td>
-            </tr>
-            <tr>
-              <td><code>B</code></td>
-              <td>8bit</td>
-              <td>汎用レジスタ</td>
-            </tr>
-            <tr>
-              <td><code>X</code></td>
-              <td>8bit</td>
-              <td>インデックスレジスタ</td>
-            </tr>
-            <tr>
-              <td><code>PC</code></td>
-              <td>16bit</td>
-              <td>プログラムカウンタ</td>
-            </tr>
-            <tr>
-              <td><code>SP</code></td>
-              <td>8bit</td>
-              <td>スタックポインタ（初期値: 0xFF）</td>
-            </tr>
-            <tr>
-              <td><code>F</code></td>
-              <td>8bit</td>
-              <td>フラグレジスタ</td>
-            </tr>
-          </tbody>
-        </table>
+    <h3>画面</h3>
+    <ul>
+      <li>解像度: <strong>128x128 ピクセル</strong></li>
+      <li>色数: <strong>16色</strong>（4bit インデックスカラー）</li>
+      <li>VRAM配置: <code>VRAM[y * 128 + x]</code> = 色番号（0-15）</li>
+    </ul>
 
-        <h3>フラグレジスタ (F)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>ビット</th>
-              <th>名称</th>
-              <th>説明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>0</td>
-              <td>Z (Zero)</td>
-              <td>演算結果が0の時に1</td>
-            </tr>
-            <tr>
-              <td>1</td>
-              <td>C (Carry)</td>
-              <td>加算でキャリー発生時、減算でボロー発生時に1</td>
-            </tr>
-            <tr>
-              <td>2-6</td>
-              <td>-</td>
-              <td>未使用（将来拡張用）</td>
-            </tr>
-            <tr>
-              <td>7</td>
-              <td>IF (Interrupt Flag)</td>
-              <td>割り込み許可フラグ（1=許可）</td>
-            </tr>
-          </tbody>
-        </table>
+    <h3>カラーパレット</h3>
+    <p>16色のパレットは <code>0xC000-0xC00F</code> に配置。各色は8bit RGB332形式:</p>
+    <pre>RGB332形式:
+RRR GGG BB
+|||  |  ||
+|||  |  ++-- 青 (0-3)  ×85 → 0-255
+|||  +------ 緑 (0-7)  ×36 → 0-252
++++--------- 赤 (0-7)  ×36 → 0-252</pre>
 
-        <div class="note">
-          <strong>スタックの配置:</strong> スタックは 0x0100-0x01FF に配置され、SPは0x0100からのオフセットとして機能します。
-        </div>
-      </section>
+    <div class="note">
+      <strong>デフォルトパレット:</strong><br>
+      0: 0x00 (黒), 1: 0xFF (白), 2: 0xE0 (赤), 3: 0x1C (緑), 
+      4: 0x03 (青), 5: 0xFC (黄), 6: 0xE3 (マゼンタ), 7: 0x1F (シアン),
+      8-15: 0x00 (初期は黒)
+    </div>
 
-      <!-- 3. メモリマップ -->
-      <section class="spec-section" id="memory">
-        <h2>3. メモリマップ</h2>
-        
-        <table>
-          <thead>
-            <tr>
-              <th>アドレス範囲</th>
-              <th>サイズ</th>
-              <th>用途</th>
-              <th>読込</th>
-              <th>書込</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>0x0000-0x7FFF</code></td>
-              <td>32KB</td>
-              <td>RAM（汎用メモリ）</td>
-              <td>○</td>
-              <td>○</td>
-            </tr>
-            <tr>
-              <td><code>0x8000-0xBFFF</code></td>
-              <td>16KB</td>
-              <td>VRAM（ビデオメモリ）</td>
-              <td>○</td>
-              <td>○</td>
-            </tr>
-            <tr>
-              <td><code>0xC000-0xC0FF</code></td>
-              <td>256B</td>
-              <td>I/Oポート</td>
-              <td>○</td>
-              <td>○</td>
-            </tr>
-            <tr>
-              <td><code>0xC100-0xDFFF</code></td>
-              <td>7936B</td>
-              <td>予約領域（未使用）</td>
-              <td>-</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0xE000-0xFFFF</code></td>
-              <td>8KB</td>
-              <td>ROM / BIOS</td>
-              <td>○</td>
-              <td>×</td>
-            </tr>
-          </tbody>
-        </table>
+    <h2>3. 命令セット（最小構成）</h2>
 
-        <h3>特殊メモリ領域</h3>
-        
-        <h4>スタック領域</h4>
-        <ul>
-          <li>位置: <code>0x0100-0x01FF</code> (RAM内)</li>
-          <li>サイズ: 256バイト</li>
-          <li>成長方向: 下位アドレスへ（デクリメント）</li>
-        </ul>
+    <table>
+      <thead>
+        <tr><th>命令</th><th>コード</th><th>サイクル</th><th>説明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NOP</td><td>0x00</td><td>1</td><td>何もしない</td></tr>
+        <tr><td>LD A, #n</td><td>0x01 nn</td><td>2</td><td>A = n</td></tr>
+        <tr><td>LD B, #n</td><td>0x02 nn</td><td>2</td><td>B = n</td></tr>
+        <tr><td>LD X, #n</td><td>0x03 nn</td><td>2</td><td>X = n</td></tr>
+        <tr><td>LD A, [addr]</td><td>0x04 LL HH</td><td>3</td><td>A = メモリ[addr]</td></tr>
+        <tr><td>ST A, [addr]</td><td>0x05 LL HH</td><td>3</td><td>メモリ[addr] = A</td></tr>
+        <tr><td>MOV A, B</td><td>0x10</td><td>1</td><td>A = B</td></tr>
+        <tr><td>MOV B, A</td><td>0x11</td><td>1</td><td>B = A</td></tr>
+        <tr><td>MOV A, X</td><td>0x12</td><td>1</td><td>A = X</td></tr>
+        <tr><td>MOV X, A</td><td>0x13</td><td>1</td><td>X = A</td></tr>
+        <tr><td>ADD A, B</td><td>0x20</td><td>1</td><td>A = A + B</td></tr>
+        <tr><td>INC A</td><td>0x25</td><td>1</td><td>A++</td></tr>
+        <tr><td>INC B</td><td>0x26</td><td>1</td><td>B++</td></tr>
+        <tr><td>INC X</td><td>0x27</td><td>1</td><td>X++</td></tr>
+        <tr><td>JMP addr</td><td>0x30 LL HH</td><td>3</td><td>PC = addr</td></tr>
+        <tr><td>JE addr</td><td>0x31 LL HH</td><td>3</td><td>Zフラグ=1ならジャンプ</td></tr>
+        <tr><td>JNE addr</td><td>0x32 LL HH</td><td>3</td><td>Zフラグ=0ならジャンプ</td></tr>
+        <tr><td>HALT</td><td>0xFF</td><td>1</td><td>停止</td></tr>
+      </tbody>
+    </table>
 
-        <h4>ゼロページ</h4>
-        <ul>
-          <li>位置: <code>0x0000-0x00FF</code></li>
-          <li>高速アクセス可能な領域（将来の最適化用）</li>
-        </ul>
+    <div class="important">
+      <strong>重要:</strong> アドレスはLittle Endian（下位バイトが先）。例: 0x8000 → <code>00 80</code>
+    </div>
 
-        <div class="important">
-          <strong>重要:</strong> ROM領域（0xE000-0xFFFF）への書き込みは無視されます。エミュレータ実装時は書き込み試行を検出してもエラーを出さず、単に無視してください。
-        </div>
-      </section>
+    <h2>4. 実装例（JavaScript）</h2>
 
-      <!-- 4. 表示仕様 -->
-      <section class="spec-section" id="display">
-        <h2>4. 表示仕様</h2>
-        
-        <h3>グラフィックモード</h3>
-        <ul>
-          <li>解像度: <strong>128x128 ピクセル</strong></li>
-          <li>色深度: 8bit (256色中、パレットから16色使用)</li>
-          <li>1ピクセル = 1バイト</li>
-          <li>VRAMマッピング: リニア配列</li>
-        </ul>
-
-        <h3>VRAM構造</h3>
-        <p>ピクセル座標 (x, y) のVRAMアドレス:</p>
-        <pre>address = 0x8000 + (y * 128 + x)
-
-例:
-  - (0, 0)   → 0x8000
-  - (127, 0) → 0x807F
-  - (0, 1)   → 0x8080
-  - (127, 127) → 0xBFFF</pre>
-
-        <h3>カラーパレット</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>インデックス</th>
-              <th>I/Oアドレス</th>
-              <th>デフォルト色</th>
-              <th>RGB332値</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>0</td><td>0xC020</td><td>黒</td><td>0x00</td></tr>
-            <tr><td>1</td><td>0xC021</td><td>白</td><td>0xFF</td></tr>
-            <tr><td>2</td><td>0xC022</td><td>赤</td><td>0xE0</td></tr>
-            <tr><td>3</td><td>0xC023</td><td>緑</td><td>0x1C</td></tr>
-            <tr><td>4</td><td>0xC024</td><td>青</td><td>0x03</td></tr>
-            <tr><td>5</td><td>0xC025</td><td>黄</td><td>0xFC</td></tr>
-            <tr><td>6</td><td>0xC026</td><td>マゼンタ</td><td>0xE3</td></tr>
-            <tr><td>7</td><td>0xC027</td><td>シアン</td><td>0x1F</td></tr>
-            <tr><td>8-15</td><td>0xC028-0xC02F</td><td>グラデーション</td><td>可変</td></tr>
-          </tbody>
-        </table>
-
-        <h3>RGB332フォーマット</h3>
-        <pre>Bit: 7  6  5  4  3  2  1  0
-     [R  R  R][G  G  G][B  B]
-
-R (3bit): 赤成分 (0-7)
-G (3bit): 緑成分 (0-7)
-B (2bit): 青成分 (0-3)</pre>
-
-        <div class="example">
-          <strong>変換例（RGB → RGB332）:</strong>
-          <pre>RGB(255, 128, 64) の場合:
-  R = 255 / 36 = 7
-  G = 128 / 36 = 3
-  B = 64 / 85 = 0
-  
-  RGB332 = (7 << 5) | (3 << 2) | 0 = 0xEC</pre>
-        </div>
-      </section>
-
-      <!-- 5. I/O仕様 -->
-      <section class="spec-section" id="io">
-        <h2>5. I/O仕様</h2>
-        
-        <table>
-          <thead>
-            <tr>
-              <th>アドレス</th>
-              <th>名称</th>
-              <th>R/W</th>
-              <th>説明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>0xC000</code></td>
-              <td>フレームカウンタ</td>
-              <td>R</td>
-              <td>60Hzで0-255を循環（約4.25秒周期）</td>
-            </tr>
-            <tr>
-              <td><code>0xC001-0xC00F</code></td>
-              <td>予約</td>
-              <td>-</td>
-              <td>将来拡張用</td>
-            </tr>
-            <tr>
-              <td><code>0xC010</code></td>
-              <td>キーボード入力</td>
-              <td>R</td>
-              <td>最後に押されたキーのASCIIコード</td>
-            </tr>
-            <tr>
-              <td><code>0xC011</code></td>
-              <td>シリアル出力</td>
-              <td>W</td>
-              <td>1バイト書き込むとコンソールに出力</td>
-            </tr>
-            <tr>
-              <td><code>0xC012-0xC01F</code></td>
-              <td>予約</td>
-              <td>-</td>
-              <td>将来拡張用</td>
-            </tr>
-            <tr>
-              <td><code>0xC020-0xC02F</code></td>
-              <td>パレット（0-15）</td>
-              <td>R/W</td>
-              <td>RGB332形式のカラー定義</td>
-            </tr>
-            <tr>
-              <td><code>0xC030-0xC0FF</code></td>
-              <td>予約</td>
-              <td>-</td>
-              <td>将来拡張用（サウンド、タイマー等）</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3>キーボード入力</h3>
-        <p>エミュレータは、キーが押されたときに <code>0xC010</code> にASCIIコードを書き込みます。</p>
-        <ul>
-          <li>英数字: 対応するASCIIコード</li>
-          <li>Enter: <code>0x0D</code></li>
-          <li>Backspace: <code>0x08</code></li>
-          <li>矢印キー: <code>0x80</code>（上）、<code>0x81</code>（下）、<code>0x82</code>（左）、<code>0x83</code>（右）</li>
-        </ul>
-
-        <h3>シリアル出力</h3>
-        <p><code>0xC011</code> に書き込まれた値は、エミュレータのコンソール/ターミナルにASCII文字として出力されます。</p>
-        
-        <div class="note">
-          <strong>デバッグに便利:</strong> シリアル出力を使えば、プログラムの動作状況を簡単に確認できます。
-        </div>
-      </section>
-
-      <!-- 6. 割り込み -->
-      <section class="spec-section" id="interrupt">
-        <h2>6. 割り込み仕様</h2>
-        
-        <h3>割り込みタイプ</h3>
-        <ul>
-          <li><strong>IRQ</strong>: 外部割り込み（フレーム割り込みなど）</li>
-          <li>NMI、リセット等は未実装（簡略化のため）</li>
-        </ul>
-
-        <h3>割り込みベクタ</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>アドレス</th>
-              <th>用途</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>0xFF00-0xFF01</code></td>
-              <td>IRQハンドラアドレス（Little Endian）</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3>割り込み処理フロー</h3>
-        <p>IRQが発生した場合（IFフラグ=1のとき）:</p>
-        <pre>1. PUSH PCH (上位バイト)
-2. PUSH PCL (下位バイト)
-3. PUSH F
-4. IF = 0 (割り込み無効化)
-5. PC = [0xFF00] | ([0xFF01] << 8)</pre>
-
-        <h3>割り込みからの復帰 (RTI命令)</h3>
-        <pre>1. POP F
-2. POP PCL
-3. POP PCH
-4. PC = PCL | (PCH << 8)</pre>
-
-        <div class="important">
-          <strong>重要:</strong> 割り込み中に再度割り込みが発生しないよう、IFフラグは自動的にクリアされます。
-        </div>
-      </section>
-
-      <!-- 7. 命令セット -->
-      <section class="spec-section" id="instruction">
-        <h2>7. 命令セット</h2>
-        
-        <h3>命令フォーマット</h3>
-        <p>すべての命令は <strong>1〜3バイト</strong> で構成されます:</p>
-        <ul>
-          <li>1バイト: オペコードのみ</li>
-          <li>2バイト: オペコード + 8bit即値/ポート番号</li>
-          <li>3バイト: オペコード + 16bitアドレス</li>
-        </ul>
-
-        <h3>完全命令表</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Opcode</th>
-              <th>ニーモニック</th>
-              <th>Bytes</th>
-              <th>Cycles</th>
-              <th>説明</th>
-              <th>フラグ影響</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- データ転送 -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ データ転送命令</td>
-            </tr>
-            <tr>
-              <td><code>0x00</code></td>
-              <td><code>NOP</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>何もしない</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x01</code></td>
-              <td><code>LD A, #n</code></td>
-              <td>2</td>
-              <td>2</td>
-              <td>A ← 即値n</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x02</code></td>
-              <td><code>LD B, #n</code></td>
-              <td>2</td>
-              <td>2</td>
-              <td>B ← 即値n</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x03</code></td>
-              <td><code>LD A, [addr]</code></td>
-              <td>3</td>
-              <td>3</td>
-              <td>A ← メモリ[addr]</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x04</code></td>
-              <td><code>ST A, [addr]</code></td>
-              <td>3</td>
-              <td>3</td>
-              <td>メモリ[addr] ← A</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x05</code></td>
-              <td><code>LD X, #n</code></td>
-              <td>2</td>
-              <td>2</td>
-              <td>X ← 即値n</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x06</code></td>
-              <td><code>ST B, [addr]</code></td>
-              <td>3</td>
-              <td>3</td>
-              <td>メモリ[addr] ← B</td>
-              <td>-</td>
-            </tr>
-            
-            <!-- レジスタ間転送 -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ レジスタ間転送</td>
-            </tr>
-            <tr>
-              <td><code>0x10</code></td>
-              <td><code>MOV A, B</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← B</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x11</code></td>
-              <td><code>MOV B, A</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>B ← A</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x12</code></td>
-              <td><code>MOV A, X</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← X</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x13</code></td>
-              <td><code>MOV X, A</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>X ← A</td>
-              <td>Z</td>
-            </tr>
-            
-            <!-- 算術演算 -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ 算術・論理演算</td>
-            </tr>
-            <tr>
-              <td><code>0x20</code></td>
-              <td><code>ADD A, B</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← A + B</td>
-              <td>Z, C</td>
-            </tr>
-            <tr>
-              <td><code>0x21</code></td>
-              <td><code>SUB A, B</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← A - B</td>
-              <td>Z, C</td>
-            </tr>
-            <tr>
-              <td><code>0x22</code></td>
-              <td><code>AND A, B</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← A AND B</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x23</code></td>
-              <td><code>OR A, B</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← A OR B</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x24</code></td>
-              <td><code>XOR A, B</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← A XOR B</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x25</code></td>
-              <td><code>INC A</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← A + 1</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x26</code></td>
-              <td><code>DEC A</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>A ← A - 1</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x27</code></td>
-              <td><code>INC X</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>X ← X + 1</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x28</code></td>
-              <td><code>DEC X</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>X ← X - 1</td>
-              <td>Z</td>
-            </tr>
-            
-            <!-- 分岐・ジャンプ -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ 制御命令</td>
-            </tr>
-            <tr>
-              <td><code>0x30</code></td>
-              <td><code>JMP addr</code></td>
-              <td>3</td>
-              <td>3</td>
-              <td>PC ← addr</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x31</code></td>
-              <td><code>JE addr</code></td>
-              <td>3</td>
-              <td>3</td>
-              <td>Z=1 なら PC ← addr</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x32</code></td>
-              <td><code>JNE addr</code></td>
-              <td>3</td>
-              <td>3</td>
-              <td>Z=0 なら PC ← addr</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x33</code></td>
-              <td><code>JC addr</code></td>
-              <td>3</td>
-              <td>3</td>
-              <td>C=1 なら PC ← addr</td>
-              <td>-</td>
-            </tr>
-            
-            <!-- サブルーチン -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ サブルーチン</td>
-            </tr>
-            <tr>
-              <td><code>0x40</code></td>
-              <td><code>CALL addr</code></td>
-              <td>3</td>
-              <td>4</td>
-              <td>スタックにPCを退避してaddrへジャンプ</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x41</code></td>
-              <td><code>RET</code></td>
-              <td>1</td>
-              <td>4</td>
-              <td>スタックからPCを復帰</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x42</code></td>
-              <td><code>RTI</code></td>
-              <td>1</td>
-              <td>5</td>
-              <td>割り込みから復帰（F, PCを復帰）</td>
-              <td>全て</td>
-            </tr>
-            
-            <!-- スタック操作 -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ スタック操作</td>
-            </tr>
-            <tr>
-              <td><code>0x50</code></td>
-              <td><code>PUSH A</code></td>
-              <td>1</td>
-              <td>3</td>
-              <td>スタックにAを退避</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x51</code></td>
-              <td><code>POP A</code></td>
-              <td>1</td>
-              <td>3</td>
-              <td>スタックからAを復帰</td>
-              <td>Z</td>
-            </tr>
-            <tr>
-              <td><code>0x52</code></td>
-              <td><code>PUSH B</code></td>
-              <td>1</td>
-              <td>3</td>
-              <td>スタックにBを退避</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x53</code></td>
-              <td><code>POP B</code></td>
-              <td>1</td>
-              <td>3</td>
-              <td>スタックからBを復帰</td>
-              <td>Z</td>
-            </tr>
-            
-            <!-- I/O -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ I/O命令</td>
-            </tr>
-            <tr>
-              <td><code>0x60</code></td>
-              <td><code>IN A, port</code></td>
-              <td>2</td>
-              <td>2</td>
-              <td>A ← I/O[0xC000 + port]</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td><code>0x61</code></td>
-              <td><code>OUT port, A</code></td>
-              <td>2</td>
-              <td>2</td>
-              <td>I/O[0xC000 + port] ← A</td>
-              <td>-</td>
-            </tr>
-            
-            <!-- システム -->
-            <tr style="background:#111;">
-              <td colspan="6" style="font-weight:bold; color:#0f0;">▼ システム制御</td>
-            </tr>
-            <tr>
-              <td><code>0xFE</code></td>
-              <td><code>EI</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>割り込み許可（IF ← 1）</td>
-              <td>IF</td>
-            </tr>
-            <tr>
-              <td><code>0xFF</code></td>
-              <td><code>HALT</code></td>
-              <td>1</td>
-              <td>1</td>
-              <td>CPUを停止</td>
-              <td>-</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <div class="note">
-          <strong>合計:</strong> 実装必須命令は31個。追加命令を含めても40個以下。
-        </div>
-      </section>
-
-      <!-- 8. BIOS仕様 -->
-      <section class="spec-section" id="bios">
-        <h2>8. BIOS仕様</h2>
-        
-        <p>BIOSは ROM の最後の部分（0xFFF0以降）に配置される基本入出力システムです。</p>
-
-        <h3>BIOSコールアドレス</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>アドレス</th>
-              <th>機能</th>
-              <th>入力</th>
-              <th>出力</th>
-              <th>説明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><code>0xFFF0</code></td>
-              <td>PUTC</td>
-              <td>A = 文字コード</td>
-              <td>-</td>
-              <td>1文字をシリアル出力</td>
-            </tr>
-            <tr>
-              <td><code>0xFFF4</code></td>
-              <td>GETC</td>
-              <td>-</td>
-              <td>A = 文字コード</td>
-              <td>キーボードから1文字取得</td>
-            </tr>
-            <tr>
-              <td><code>0xFFF8</code></td>
-              <td>CLRSCR</td>
-              <td>-</td>
-              <td>-</td>
-              <td>画面クリア（VRAM全体を0で埋める）</td>
-            </tr>
-            <tr>
-              <td><code>0xFFFC</code></td>
-              <td>予約</td>
-              <td>-</td>
-              <td>-</td>
-              <td>将来の拡張用</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3>BIOSの実装例</h3>
-        
-        <h4>PUTC (0xFFF0)</h4>
-        <pre>; Aレジスタの内容をシリアル出力
-0xFFF0:  OUT 0x11, A   ; 0x61 0x11
-0xFFF2:  RET           ; 0x41</pre>
-
-        <h4>GETC (0xFFF4)</h4>
-        <pre>; キーボード入力をAに読み込み
-0xFFF4:  IN A, 0x10    ; 0x60 0x10
-0xFFF6:  RET           ; 0x41</pre>
-
-        <h4>CLRSCR (0xFFF8)</h4>
-        <pre>; VRAM全体を0でクリア
-0xFFF8:  LD A, #0      ; 0x01 0x00
-0xFFFA:  LD B, #0x80   ; 0x02 0x80  (VRAMスタート上位)
-         ; ... ループ処理 ...
-0xFFFE:  RET           ; 0x41</pre>
-
-        <div class="example">
-          <strong>使用例:</strong>
-          <pre>; "Hello" を出力
-    LD A, #'H'
-    CALL 0xFFF0
-    LD A, #'e'
-    CALL 0xFFF0
-    LD A, #'l'
-    CALL 0xFFF0
-    CALL 0xFFF0  ; もう一度 'l'
-    LD A, #'o'
-    CALL 0xFFF0</pre>
-        </div>
-      </section>
-
-      <!-- 9. ROMフォーマット -->
-      <section class="spec-section" id="rom">
-        <h2>9. ROMフォーマット</h2>
-        
-        <h3>ヘッダ付きフォーマット</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Offset</th>
-              <th>サイズ</th>
-              <th>内容</th>
-              <th>説明</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>0x00-0x02</td>
-              <td>3 bytes</td>
-              <td>マジックナンバー</td>
-              <td><code>"X8S"</code> (0x58 0x38 0x53)</td>
-            </tr>
-            <tr>
-              <td>0x03</td>
-              <td>1 byte</td>
-              <td>バージョン</td>
-              <td>フォーマットバージョン（通常0x00）</td>
-            </tr>
-            <tr>
-              <td>0x04-0x05</td>
-              <td>2 bytes</td>
-              <td>エントリポイント</td>
-              <td>プログラム開始アドレス（Little Endian）</td>
-            </tr>
-            <tr>
-              <td>0x06-0x07</td>
-              <td>2 bytes</td>
-              <td>プログラムサイズ</td>
-              <td>バイト数（Little Endian）</td>
-            </tr>
-            <tr>
-              <td>0x08〜</td>
-              <td>可変</td>
-              <td>プログラムデータ</td>
-              <td>実際の機械語コード</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <h3>ROMファイル例</h3>
-        <pre>Offset  00 01 02 03 04 05 06 07 08 09 0A 0B ...
-        58 38 53 00 00 E0 10 00 01 48 61 11 01 ...
-        |  |  |  |  |     |     |              |
-        |  |  |  |  |     |     |              プログラム本体
-        |  |  |  |  |     |     サイズ = 0x0010 (16 bytes)
-        |  |  |  |  |     エントリ = 0xE000
-        |  |  |  |  バージョン = 0
-        |  |  |  "S"
-        |  |  "8"
-        |  "X"
-        マジック</pre>
-
-        <h3>ヘッダなしフォーマット（raw binary）</h3>
-        <p>ヘッダなしの場合、ファイルの内容はそのまま 0xE000 から配置され、エントリポイントも 0xE000 となります。</p>
-
-        <div class="note">
-          <strong>推奨:</strong> 互換性のため、ヘッダ付きフォーマットの使用を推奨します。
-        </div>
-      </section>
-
-      <!-- 10. 実装ガイド -->
-      <section class="spec-section" id="implementation">
-        <h2>10. エミュレータ実装ガイド</h2>
-        
-        <h3>基本的な実装手順</h3>
-        
-        <h4>Step 1: データ構造の定義</h4>
-        <pre>class XVM8S {
+    <h3>Step 1: 基本構造</h3>
+    <pre>class SimpleXVM {
   constructor() {
-    // CPU レジスタ
-    this.A = 0;      // 8bit
-    this.B = 0;      // 8bit
-    this.X = 0;      // 8bit
-    this.PC = 0xE000; // 16bit
-    this.SP = 0xFF;  // 8bit
-    this.F = 0;      // 8bit
+    // レジスタ
+    this.A = 0;
+    this.B = 0;
+    this.X = 0;
+    this.PC = 0xE000;
+    this.F = 0;
     
     // メモリ
-    this.ram = new Uint8Array(0x8000);   // 32KB RAM
-    this.vram = new Uint8Array(0x4000);  // 16KB VRAM
-    this.io = new Uint8Array(0x100);     // 256B I/O
-    this.rom = new Uint8Array(0x2000);   // 8KB ROM
+    this.ram = new Uint8Array(0x8000);    // 32KB RAM
+    this.vram = new Uint8Array(0x4000);   // 16KB VRAM
+    this.palette = new Uint8Array(16);    // 16色パレット
+    this.rom = new Uint8Array(0x2000);    // 8KB ROM
     
-    this.running = false;
+    // デフォルトパレット設定
+    this.palette[0] = 0x00; // 黒
+    this.palette[1] = 0xFF; // 白
+    this.palette[2] = 0xE0; // 赤
+    this.palette[3] = 0x1C; // 緑
+    this.palette[4] = 0x03; // 青
+    this.palette[5] = 0xFC; // 黄
+    this.palette[6] = 0xE3; // マゼンタ
+    this.palette[7] = 0x1F; // シアン
+    
+    this.halted = false;
     this.cycles = 0;
   }
 }</pre>
 
-        <h4>Step 2: メモリアクセス関数</h4>
-        <pre>read8(addr) {
+    <h3>Step 2: メモリアクセス</h3>
+    <pre>read8(addr) {
   addr &= 0xFFFF;
   if (addr < 0x8000) return this.ram[addr];
   if (addr < 0xC000) return this.vram[addr - 0x8000];
-  if (addr < 0xC100) return this.io[addr - 0xC000];
+  if (addr < 0xC010) return this.palette[addr - 0xC000];
   if (addr >= 0xE000) return this.rom[addr - 0xE000];
   return 0;
 }
@@ -1115,16 +229,17 @@ write8(addr, val) {
   val &= 0xFF;
   if (addr < 0x8000) this.ram[addr] = val;
   else if (addr < 0xC000) this.vram[addr - 0x8000] = val;
-  else if (addr < 0xC100) this.io[addr - 0xC000] = val;
-  // ROMへの書き込みは無視
+  else if (addr < 0xC010) this.palette[addr - 0xC000] = val;
 }
 
 read16(addr) {
   return this.read8(addr) | (this.read8(addr + 1) << 8);
 }</pre>
 
-        <h4>Step 3: 命令実行</h4>
-        <pre>step() {
+    <h3>Step 3: 命令実行</h3>
+    <pre>step() {
+  if (this.halted) return;
+  
   const opcode = this.read8(this.PC++);
   
   switch(opcode) {
@@ -1133,64 +248,113 @@ read16(addr) {
       
     case 0x01: // LD A, #n
       this.A = this.read8(this.PC++);
-      this.updateZeroFlag(this.A);
+      this.updateZero(this.A);
+      break;
+      
+    case 0x02: // LD B, #n
+      this.B = this.read8(this.PC++);
+      this.updateZero(this.B);
+      break;
+      
+    case 0x03: // LD X, #n
+      this.X = this.read8(this.PC++);
+      this.updateZero(this.X);
+      break;
+      
+    case 0x04: // LD A, [addr]
+      this.A = this.read8(this.read16(this.PC));
+      this.PC += 2;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x05: // ST A, [addr]
+      this.write8(this.read16(this.PC), this.A);
+      this.PC += 2;
+      break;
+      
+    case 0x10: // MOV A, B
+      this.A = this.B;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x11: // MOV B, A
+      this.B = this.A;
+      this.updateZero(this.B);
+      break;
+      
+    case 0x12: // MOV A, X
+      this.A = this.X;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x13: // MOV X, A
+      this.X = this.A;
+      this.updateZero(this.X);
       break;
       
     case 0x20: // ADD A, B
-      const result = this.A + this.B;
-      this.F = (result > 0xFF) ? (this.F | 0x02) : (this.F & ~0x02);
-      this.A = result & 0xFF;
-      this.updateZeroFlag(this.A);
+      this.A = (this.A + this.B) & 0xFF;
+      this.updateZero(this.A);
       break;
       
-    // ... 他の命令
+    case 0x25: // INC A
+      this.A = (this.A + 1) & 0xFF;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x26: // INC B
+      this.B = (this.B + 1) & 0xFF;
+      this.updateZero(this.B);
+      break;
+      
+    case 0x27: // INC X
+      this.X = (this.X + 1) & 0xFF;
+      this.updateZero(this.X);
+      break;
+      
+    case 0x30: // JMP addr
+      this.PC = this.read16(this.PC);
+      break;
+      
+    case 0x31: // JE addr
+      const jeAddr = this.read16(this.PC);
+      this.PC += 2;
+      if (this.F & 0x01) this.PC = jeAddr;
+      break;
+      
+    case 0x32: // JNE addr
+      const jneAddr = this.read16(this.PC);
+      this.PC += 2;
+      if (!(this.F & 0x01)) this.PC = jneAddr;
+      break;
+      
+    case 0xFF: // HALT
+      this.halted = true;
+      break;
   }
-  
-  this.cycles += this.getCycles(opcode);
 }
 
-updateZeroFlag(val) {
-  if (val === 0) this.F |= 0x01;
-  else this.F &= ~0x01;
+updateZero(val) {
+  this.F = (val === 0) ? (this.F | 0x01) : (this.F & ~0x01);
 }</pre>
 
-        <h4>Step 4: メインループ</h4>
-        <pre>run() {
-  this.running = true;
-  this.runFrame();
-}
-
-runFrame() {
-  if (!this.running) return;
-  
-  const targetCycles = 16667; // 1MHz / 60Hz
-  const startCycles = this.cycles;
-  
-  while (this.cycles - startCycles < targetCycles && this.running) {
-    this.step();
-  }
-  
-  this.updateDisplay();
-  requestAnimationFrame(() => this.runFrame());
-}</pre>
-
-        <h4>Step 5: 画面描画</h4>
-        <pre>updateDisplay() {
-  const ctx = this.canvas.getContext('2d');
+    <h3>Step 4: 画面描画</h3>
+    <pre>updateDisplay(canvas) {
+  const ctx = canvas.getContext('2d');
   const imageData = ctx.createImageData(128, 128);
   const pixels = imageData.data;
   
   for (let y = 0; y < 128; y++) {
     for (let x = 0; x < 128; x++) {
       const colorIdx = this.vram[y * 128 + x] & 0x0F;
-      const rgb332 = this.io[0x20 + colorIdx];
-      const color = this.rgb332ToRGB(rgb332);
-      const offset = (y * 128 + x) * 4;
+      const rgb332 = this.palette[colorIdx];
+      const [r, g, b] = this.rgb332ToRGB(rgb332);
       
-      pixels[offset] = color[0];     // R
-      pixels[offset + 1] = color[1]; // G
-      pixels[offset + 2] = color[2]; // B
-      pixels[offset + 3] = 255;      // A
+      const offset = (y * 128 + x) * 4;
+      pixels[offset] = r;
+      pixels[offset + 1] = g;
+      pixels[offset + 2] = b;
+      pixels[offset + 3] = 255;
     }
   }
   
@@ -1204,182 +368,115 @@ rgb332ToRGB(val) {
   return [r, g, b];
 }</pre>
 
-        <h3>実装のポイント</h3>
-        <ul>
-          <li>まずNOP、LD、STなど基本命令から実装</li>
-          <li>各命令をテストしながら段階的に追加</li>
-          <li>デバッガ機能（レジスタ表示、ステップ実行）を早めに実装</li>
-          <li>シリアル出力を使ってプログラムの動作確認</li>
-          <li>命令実装は switch-case で十分（最適化は後回し）</li>
-        </ul>
+    <h3>Step 5: メインループ</h3>
+    <pre>run(canvas) {
+  const runFrame = () => {
+    const cyclesPerFrame = 16667; // 1MHz / 60Hz
+    const start = this.cycles;
+    
+    while (this.cycles - start < cyclesPerFrame && !this.halted) {
+      this.step();
+      this.cycles++;
+    }
+    
+    this.updateDisplay(canvas);
+    
+    if (!this.halted) {
+      requestAnimationFrame(runFrame);
+    }
+  };
+  
+  runFrame();
+}
 
-        <div class="important">
-          <strong>デバッグのコツ:</strong> シリアル出力（0xC011）を活用すれば、プログラムの動作状況を簡単に追跡できます。最初にこの機能を実装しましょう。
-        </div>
-      </section>
+// ROMロード
+loadROM(data) {
+  this.rom.set(data);
+  this.PC = 0xE000;
+  this.halted = false;
+}</pre>
 
-      <!-- 11. 実装例 -->
-      <section class="spec-section" id="examples">
-        <h2>11. サンプルプログラム</h2>
-        
-        <h3>例1: Hello World</h3>
-        <pre>; アセンブリ表記（参考）
-        LD A, #'H'      ; 0x01 0x48
-        OUT 0x11, A     ; 0x61 0x11
-        LD A, #'e'      ; 0x01 0x65
-        OUT 0x11, A     ; 0x61 0x11
-        LD A, #'l'      ; 0x01 0x6C
-        OUT 0x11, A     ; 0x61 0x11
-        OUT 0x11, A     ; 0x61 0x11
-        LD A, #'o'      ; 0x01 0x6F
-        OUT 0x11, A     ; 0x61 0x11
-        HALT            ; 0xFF
+    <h2>5. サンプルプログラム</h2>
 
-機械語（16進数）:
-01 48 61 11 01 65 61 11 01 6C 61 11 61 11 01 6F 61 11 FF</pre>
+    <h3>例1: 画面を赤で塗りつぶす</h3>
+    <pre>; 赤色(パレット2番)で画面全体を塗る
+LD A, #2           ; 0x01 0x02 (色番号2=赤)
+LD X, #0           ; 0x03 0x00 (カウンタ初期化)
 
-        <h3>例2: カウンタ表示</h3>
-        <pre>; 0から9まで数字を出力
-        LD B, #0        ; 0x02 0x00
 LOOP:
-        MOV A, B        ; 0x10
-        ADD A, #0x30    ; A = B + '0'のため即値加算が必要
-                        ; （簡易版では LD A, #'0'; ADD A, B でも可）
-        OUT 0x11, A     ; 0x61 0x11
-        INC B           ; B++（※この命令は0x29で追加定義が必要）
-        LD A, #10       ; 0x01 0x0A
-        SUB A, B        ; 0x21
-        JNE LOOP        ; 0x32 [LOOP_ADDR]
-        HALT            ; 0xFF</pre>
+  ST A, [0x8000]   ; 0x05 00 80 (VRAM先頭に書き込み)
+  ; ※実際はXを使ってアドレスを計算する必要あり
+  ; 簡易版では固定アドレスへの書き込みのみ
+  INC X            ; 0x27
+  LD B, #0         ; 0x02 0x00
+  ; X == 0 になったら終了 (256回ループ)
+  MOV B, X         ; 0x11
+  ; Bが0ならZ=1
+  JNE LOOP         ; 0x32 [LOOPアドレス]
+  
+HALT               ; 0xFF
 
-        <h3>例3: グラデーション描画</h3>
-        <pre>; 画面全体にグラデーションを描画
-        LD X, #0        ; X = 0 (カウンタ)
-LOOP:
-        ; VRAMアドレス = 0x8000 + X*256 + X
-        ; 簡易版: VRAM[X] = X & 0x0F
-        
-        MOV A, X        ; 0x12
-        AND A, #0x0F    ; 下位4bitのみ使用（要即値AND実装）
-        
-        ; ST A, [0x8000 + X] の実装
-        ; ※アドレッシングモードの制限により、
-        ;   インデックスレジスタを使った間接アドレッシングが必要
-        ;   または別の方法で実装
-        
-        INC X           ; 0x27
-        LD A, #0        ; 0x01 0x00
-        SUB A, X        ; X == 0 ?
-        JNE LOOP        ; 0x32 [LOOP_ADDR]
-        HALT            ; 0xFF</pre>
+機械語:
+01 02 03 00 05 00 80 27 02 00 11 32 05 E0 FF</pre>
 
-        <h3>例4: 無限ループ（割り込み待ち）</h3>
-        <pre>; 割り込みハンドラで画面更新
-MAIN:
-        EI              ; 0xFE 割り込み許可
-IDLE:
-        NOP             ; 0x00
-        JMP IDLE        ; 0x30 [IDLE_ADDR]
+    <h3>例2: グラデーション描画</h3>
+    <pre>; 0-15の色でグラデーション
+LD A, #0           ; 0x01 0x00
+LD X, #0           ; 0x03 0x00
 
-; 割り込みハンドラ（0xFF00に設定）
-IRQ_HANDLER:
-        ; フレームカウンタをインクリメント
-        IN A, 0x00      ; 0x60 0x00
-        INC A           ; 0x25
-        OUT 0x00, A     ; 0x61 0x00
-        
-        RTI             ; 0x42</pre>
+OUTER:
+  LD B, #128       ; 0x02 0x80 (128ピクセル)
+  INNER:
+    ; ST A, [VRAM + offset] を実装
+    ; 簡易版では直接計算が必要
+    INC B          ; 0x26
+    JNE INNER      ; 0x32 [INNERアドレス]
+  
+  INC A            ; 0x25
+  LD B, #16        ; 0x02 0x10
+  ; A < 16 ?
+  MOV B, A         ; 0x11
+  ; ... 比較ロジック
+  JNE OUTER        ; 0x32 [OUTERアドレス]
 
-        <div class="note">
-          <strong>注意:</strong> 上記の例は説明用の疑似コードです。実際には命令セットの制約に応じて調整が必要です。
-        </div>
-      </section>
+HALT               ; 0xFF</pre>
 
-      <!-- チェックリスト -->
-      <section class="spec-section">
-        <h2>12. 実装チェックリスト</h2>
-        
-        <h3>最小限の実装（Level 1）</h3>
-        <ul style="list-style-type: none;">
-          <li>☐ メモリ読み書き機能</li>
-          <li>☐ 基本命令（NOP, LD, ST, MOV）</li>
-          <li>☐ 算術命令（ADD, SUB, INC, DEC）</li>
-          <li>☐ ジャンプ命令（JMP, JE, JNE）</li>
-          <li>☐ レジスタ表示</li>
-          <li>☐ ステップ実行</li>
-        </ul>
-
-        <h3>基本機能（Level 2）</h3>
-        <ul style="list-style-type: none;">
-          <li>☐ サブルーチン（CALL, RET）</li>
-          <li>☐ スタック操作（PUSH, POP）</li>
-          <li>☐ I/O命令（IN, OUT）</li>
-          <li>☐ シリアル出力機能</li>
-          <li>☐ 画面描画機能</li>
-          <li>☐ ROMローダー</li>
-        </ul>
-
-        <h3>完全実装（Level 3）</h3>
-        <ul style="list-style-type: none;">
-          <li>☐ 全命令の実装</li>
-          <li>☐ 割り込み処理（IRQ, RTI）</li>
-          <li>☐ キーボード入力</li>
-          <li>☐ パレット機能</li>
-          <li>☐ BIOS実装</li>
-          <li>☐ ROMヘッダ対応</li>
-          <li>☐ フルスクリーン機能</li>
-        </ul>
-
-        <div class="example">
-          <strong>学習の進め方:</strong>
-          <ol>
-            <li>Level 1を実装（1日目）</li>
-            <li>"Hello World"プログラムを動かす</li>
-            <li>Level 2を実装（2日目）</li>
-            <li>簡単なゲームを動かす</li>
-            <li>Level 3で完成（3日目）</li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- まとめ -->
-      <section class="spec-section">
-        <h2>まとめ</h2>
-        
-        <p>XVM-8Sは、教育目的で設計されたシンプルな8bitバーチャルマシンです。</p>
-        
-        <h3>仕様の特徴</h3>
-        <ul>
-          <li>実装必須命令: 31個（全体でも40個以下）</li>
-          <li>固定サイクル制で実装が容易</li>
-          <li>明確なメモリマップ</li>
-          <li>実用的なグラフィック機能（128x128, 16色）</li>
-          <li>デバッグ用のシリアル出力</li>
-        </ul>
-
-        <h3>用途</h3>
-        <ul>
-          <li>エミュレータ開発の学習</li>
-          <li>低レベルプログラミングの教育</li>
-          <li>レトロゲーム開発</li>
-          <li>簡易OS・インタプリタの実装</li>
-        </ul>
-
-        <div class="important">
-          <strong>完成目標:</strong> この仕様書を読むだけで、2〜3日で動作するエミュレータが実装できること。
-        </div>
-
-        <div style="margin-top: 30px; padding: 20px; background: #0a0a0a; border: 1px solid #0f0; text-align: center;">
-          <h3 style="color: #0f0; margin-top: 0;">XVM-8S 仕様書 v2.0</h3>
-          <p>Specification完成日: 2026年</p>
-          <p style="color: #0ff; font-size: 12px;">
-            この仕様書は Creative Commons CC0 (Public Domain) でリリースされています。<br>
-            自由に実装・改変・配布できます。
-          </p>
-        </div>
-      </section>
-
+    <div class="note">
+      <strong>実装のヒント:</strong> インデックスレジスタXを使った間接アドレッシングを追加すると、より柔軟なVRAM操作が可能になります。
     </div>
 
-  </body>
+    <h2>6. 完成までのステップ</h2>
+
+    <ol>
+      <li><strong>1時間目:</strong> メモリアクセス関数を実装</li>
+      <li><strong>2時間目:</strong> 基本命令(LD, ST, MOV)を実装</li>
+      <li><strong>3時間目:</strong> 算術・ジャンプ命令を実装</li>
+      <li><strong>4時間目:</strong> 画面描画機能を実装</li>
+      <li><strong>5時間目:</strong> テストプログラムで動作確認</li>
+    </ol>
+
+    <div class="important">
+      <strong>完成目標:</strong> 5時間で動作するエミュレータを実装し、画面に絵を描くプログラムを動かす!
+    </div>
+
+    <h2>7. 発展課題</h2>
+
+    <ul>
+      <li>キーボード入力対応（I/Oポート追加）</li>
+      <li>スプライト機能（専用VRAM領域）</li>
+      <li>サウンド機能（単純な矩形波）</li>
+      <li>アセンブラの実装</li>
+      <li>簡易BASICインタプリタ</li>
+    </ul>
+
+    <div style="margin-top: 50px; padding: 20px; background: #0a0a0a; border: 1px solid #0f0; text-align: center;">
+      <h3 style="color: #0f0; margin-top: 0;">XVM-8S 仕様書</h3>
+      <p style="color: #888;">誰でも実装できる最小限の8bitマシン</p>
+      <p style="color: #0ff; font-size: 12px;">
+        CC0 Public Domain - 自由に使用・改変・配布できます
+      </p>
+    </div>
+
+  </div>
+</body>
 </html>
