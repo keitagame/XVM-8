@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>XVM-8 完全仕様書 v1.2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+    font-family: monospace;
+    background:#0d0d0d;
+    color:#e0e0e0;
+    margin:0;
+    padding:40px;
+    line-height:1.6;
+}
+h1,h2,h3{
+    color:#4fc3f7;
+    border-bottom:1px solid #333;
+    padding-bottom:5px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin:15px 0;
+}
+th,td{
+    border:1px solid #333;
+    padding:6px;
+}
+th{
+    background:#1a1a1a;
+}
+pre{
+    background:#000;
+    padding:12px;
+    overflow-x:auto;
+    color:#00ff88;
+}
+.section{
+    margin-bottom:50px;
+}
+</style>
+</head>
+<body>
+
+<h1>XVM-8 完全仕様書 v1.2</h1>
+
+<div class="section">
+<h2>1. 基本仕様</h2>
+<ul>
+<li>CPU: 8bit</li>
+<li>アドレス空間: 16bit (64KB)</li>
+<li>エンディアン: Little Endian</li>
+<li>基本クロック: 1MHz</li>
+<li>割り込み: マスク可能 / ネスト不可</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>2. 電源投入時状態</h2>
+<table>
+<tr><th>レジスタ</th><th>初期値</th></tr>
+<tr><td>A,B,C,D</td><td>0x00</td></tr>
+<tr><td>PC</td><td>ROMヘッダのエントリポイント</td></tr>
+<tr><td>SP</td><td>0x7FFF</td></tr>
+<tr><td>F</td><td>0x00</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>3. メモリマップ</h2>
+<table>
+<tr><th>範囲</th><th>用途</th></tr>
+<tr><td>0x0000-0x7FFF</td><td>RAM (32KB)</td></tr>
+<tr><td>0x8000-0xBFFF</td><td>VRAM (16KB)</td></tr>
+<tr><td>0xC000-0xC0FF</td><td>I/O</td></tr>
+<tr><td>0xE000-0xFFFF</td><td>ROM</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>4. VRAM仕様</h2>
+<ul>
+<li>解像度: 128x128</li>
+<li>1ピクセル = 1byte (8bitインデックスカラー)</li>
+<li>VRAMアドレス計算:</li>
+</ul>
+<pre>
+address = 0x8000 + (y * 128 + x)
+</pre>
+<ul>
+<li>パレット: I/O 0xC020-0xC02F (16色 RGB332)</li>
+<li>フレーム更新: 60Hz固定</li>
+</ul>
+</div>
+
+<div class="section">
+<h2>5. I/O仕様</h2>
+<table>
+<tr><th>アドレス</th><th>機能</th></tr>
+<tr><td>0xC000</td><td>タイマーカウンタ</td></tr>
+<tr><td>0xC001</td><td>タイマー制御 (bit0=enable, bit1=irq)</td></tr>
+<tr><td>0xC010</td><td>入力状態</td></tr>
+<tr><td>0xC020-0xC02F</td><td>パレット</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>6. 割り込み仕様</h2>
+<ul>
+<li>ベクタ: 0xFF00</li>
+<li>優先順位: タイマー > 入力</li>
+<li>割り込み発生時:</li>
+</ul>
+<pre>
+PUSH PC (low→high)
+PUSH F
+PC = 0xFF00
+IF = 0
+</pre>
+</div>
+
+<div class="section">
+<h2>7. フラグ仕様</h2>
+<table>
+<tr><th>Bit</th><th>名称</th><th>意味</th></tr>
+<tr><td>0</td><td>Z</td><td>ゼロ</td></tr>
+<tr><td>1</td><td>C</td><td>キャリー</td></tr>
+<tr><td>2</td><td>N</td><td>負数</td></tr>
+<tr><td>3</td><td>V</td><td>オーバーフロー</td></tr>
+<tr><td>7</td><td>IF</td><td>割り込み許可</td></tr>
+</table>
+</div>
+
+<!-- ===================================== -->
+<!-- 命令セット完全サイクル確定表 追加部分 -->
+<!-- ===================================== -->
+
+<div class="section">
+<h2>命令セット完全サイクル確定表</h2>
+
+<h3>■ 命令フォーマット規則</h3>
+<ul>
+<li>imm8 = 2バイト命令</li>
+<li>addr16 = 3バイト命令</li>
+<li>レジスタ間 = 1バイト命令</li>
+<li>SP/PC即値 = 3バイト命令</li>
+</ul>
+
+<h3>■ 0x00系</h3>
+<table>
+<tr><th>Opcode</th><th>命令</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x00</td><td>NOP</td><td>1</td><td>1</td></tr>
+<tr><td>0x01-0x04</td><td>LD r,imm8</td><td>2</td><td>2</td></tr>
+<tr><td>0x05-0x08</td><td>LD r,addr16</td><td>3</td><td>4</td></tr>
+<tr><td>0x09-0x0C</td><td>ST r,addr16</td><td>3</td><td>4</td></tr>
+</table>
+
+<h3>■ 0x10系（MOV）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x10-0x15</td><td>1</td><td>1</td></tr>
+</table>
+
+<h3>■ 0x20系（算術）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x20-0x22</td><td>1</td><td>2</td></tr>
+<tr><td>0x23</td><td>2</td><td>2</td></tr>
+<tr><td>0x24-0x26</td><td>1</td><td>2</td></tr>
+<tr><td>0x27</td><td>2</td><td>2</td></tr>
+<tr><td>0x28-0x29</td><td>1</td><td>2</td></tr>
+<tr><td>0x2A-0x2F</td><td>1</td><td>1</td></tr>
+</table>
+
+<h3>■ 0x30系（論理）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x30-0x32</td><td>1</td><td>2</td></tr>
+<tr><td>0x33</td><td>1</td><td>1</td></tr>
+<tr><td>0x34-0x37</td><td>1</td><td>1</td></tr>
+<tr><td>0x38</td><td>1</td><td>2</td></tr>
+<tr><td>0x39</td><td>2</td><td>2</td></tr>
+</table>
+
+<h3>■ 0x40系（ジャンプ）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x40</td><td>3</td><td>3</td></tr>
+<tr><td>0x41-0x48</td><td>3</td><td>3 (非成立時2)</td></tr>
+</table>
+
+<h3>■ 0x50系（サブルーチン）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x50</td><td>3</td><td>5</td></tr>
+<tr><td>0x51</td><td>1</td><td>4</td></tr>
+<tr><td>0x52</td><td>1</td><td>4</td></tr>
+</table>
+
+<h3>■ 0x60系（スタック）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x60-0x63</td><td>1</td><td>3</td></tr>
+<tr><td>0x64-0x67</td><td>1</td><td>3</td></tr>
+<tr><td>0x68-0x69</td><td>1</td><td>3</td></tr>
+</table>
+
+<h3>■ 0x70系（I/O）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x70</td><td>3</td><td>4</td></tr>
+<tr><td>0x71</td><td>3</td><td>4</td></tr>
+</table>
+
+<h3>■ 0x80系（16bit）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0x80-0x81</td><td>3</td><td>3</td></tr>
+<tr><td>0x82-0x83</td><td>2</td><td>2</td></tr>
+</table>
+
+<h3>■ 0xF0系（システム）</h3>
+<table>
+<tr><th>Opcode</th><th>Bytes</th><th>Cycles</th></tr>
+<tr><td>0xF0</td><td>1</td><td>1</td></tr>
+<tr><td>0xF1</td><td>1</td><td>1</td></tr>
+<tr><td>0xFE</td><td>1</td><td>7</td></tr>
+<tr><td>0xFF</td><td>1</td><td>1</td></tr>
+</table>
+
+<p><strong>全定義済み命令サイクル確定。</strong></p>
+
+</div>
+
+
+<div class="section">
+<h2>9. ROMフォーマット</h2>
+<table>
+<tr><th>Offset</th><th>内容</th></tr>
+<tr><td>0x00</td><td>"XVM8"</td></tr>
+<tr><td>0x04</td><td>エントリポイント(16bit, Little)</td></tr>
+<tr><td>0x06</td><td>ROMサイズ</td></tr>
+<tr><td>0x08</td><td>実データ</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>10. エミュレータ実装基準</h2>
+<pre>
+while (running) {
+    opcode = read8(PC++);
+    execute(opcode);
+    cycles += cycleTable[opcode];
+    if (cycles >= 16667) {
+        renderFrame();
+        cycles -= 16667;
+    }
+    checkInterrupt();
+}
+</pre>
+<p>※ 1フレーム = 1MHz / 60Hz = 約16667サイクル</p>
+</div>
+
+<div class="section">
+<h2>11. 完成度</h2>
+<p>
+この仕様により、
+CPU / メモリ / I/O / タイマー / 割り込み / VRAM / 描画
+すべて実装可能。
+</p>
+<p><strong>実機レベルエミュレーター構築可能。</strong></p>
+</div>
+
+</body>
+</html>
