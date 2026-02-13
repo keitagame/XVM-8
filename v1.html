@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>XVM-8S 拡張仕様書 v1.1</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    @font-face {
+        font-family: "Renner";
+        src: url("./Renner.ttf") format("truetype");
+        font-display: swap;
+      }
+    body {
+      background: #000;
+      font-family: "Renner",sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #fff;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 300;
+      border-bottom: 2px solid #0f0;
+      padding-bottom: 10px;
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 400;
+      color: #0ff;
+      margin-top: 40px;
+    }
+    h3 {
+      font-size: 18px;
+      font-weight: 400;
+      color: #ff0;
+      margin-top: 30px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background: #1a1a1a;
+      font-weight: 500;
+    }
+    code {
+      background: #1a1a1a;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      color: #0f0;
+    }
+    pre {
+      background: #0f0f0f;
+      border: 1px solid #333;
+      padding: 15px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .note {
+      background: #1a1a00;
+      border-left: 4px solid #ff0;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+    .important {
+      background: #1a0000;
+      border-left: 4px solid #f00;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+    .new {
+      background: #001a1a;
+      border-left: 4px solid #0ff;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+    .new-badge {
+      display: inline-block;
+      background: #0ff;
+      color: #000;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>XVM-8S 拡張仕様書 v1.1</h1>
+    <p style="color: #888;">超シンプルな8bitバーチャルマシン - グラフィック専用版（拡張版）</p>
+
+    <div class="note">
+      <strong>コンセプト:</strong> 初心者が1日で実装できる最小限のバーチャルマシン。グラフィック描画のみに特化し、命令数は20個以下。
+    </div>
+
+    <div class="new">
+      <strong>v1.1 の変更点:</strong> 元の仕様との互換性を完全に保ちつつ、以下の機能を追加しました：
+      <ul style="margin: 10px 0 0 20px;">
+        <li>インデックスアドレッシング命令（ST A, [X+nn]）</li>
+        <li>減算命令（SUB A, B）とデクリメント命令（DEC X）</li>
+        <li>比較命令（CMP A, B）でより柔軟な条件分岐を実現</li>
+      </ul>
+      これらの追加により、VRAMへの描画が実用的なレベルで可能になります。
+    </div>
+
+    <h2>1. 基本仕様</h2>
+    
+    <h3>CPU</h3>
+    <ul>
+      <li>8bit CPU</li>
+      <li>アドレス空間: 16bit (64KB)</li>
+      <li>クロック: 1MHz / リフレッシュ: 60Hz</li>
+    </ul>
+
+    <h3>レジスタ</h3>
+    <table>
+      <tr><th>名前</th><th>サイズ</th><th>説明</th></tr>
+      <tr><td><code>A</code></td><td>8bit</td><td>汎用レジスタ</td></tr>
+      <tr><td><code>B</code></td><td>8bit</td><td>汎用レジスタ</td></tr>
+      <tr><td><code>X</code></td><td>8bit</td><td>インデックスレジスタ</td></tr>
+      <tr><td><code>PC</code></td><td>16bit</td><td>プログラムカウンタ（初期値: 0xE000）</td></tr>
+      <tr><td><code>F</code></td><td>8bit</td><td>フラグ（bit0=Zero, bit1=Carry）</td></tr>
+    </table>
+
+    <h3>メモリマップ</h3>
+    <table>
+      <tr><th>アドレス</th><th>サイズ</th><th>説明</th></tr>
+      <tr><td>0x0000-0x7FFF</td><td>32KB</td><td>RAM</td></tr>
+      <tr><td>0x8000-0xBFFF</td><td>16KB</td><td><strong>VRAM（グラフィック専用）</strong></td></tr>
+      <tr><td>0xC000-0xC00F</td><td>16B</td><td>パレット（16色）</td></tr>
+      <tr><td>0xE000-0xFFFF</td><td>8KB</td><td>ROM（プログラム領域）</td></tr>
+    </table>
+
+    <h2>2. グラフィック仕様</h2>
+
+    <h3>画面</h3>
+    <ul>
+      <li>解像度: <strong>128x128 ピクセル</strong></li>
+      <li>色数: <strong>16色</strong>（4bit インデックスカラー）</li>
+      <li>VRAM配置: <code>VRAM[y * 128 + x]</code> = 色番号（0-15）</li>
+    </ul>
+
+    <h3>カラーパレット</h3>
+    <p>16色のパレットは <code>0xC000-0xC00F</code> に配置。各色は8bit RGB332形式:</p>
+    <pre>RGB332形式:
+RRR GGG BB
+|||  |  ||
+|||  |  ++-- 青 (0-3)  ×85 → 0-255
+|||  +------ 緑 (0-7)  ×36 → 0-252
++++--------- 赤 (0-7)  ×36 → 0-252</pre>
+
+    <div class="note">
+      <strong>デフォルトパレット:</strong><br>
+      0: 0x00 (黒), 1: 0xFF (白), 2: 0xE0 (赤), 3: 0x1C (緑), 
+      4: 0x03 (青), 5: 0xFC (黄), 6: 0xE3 (マゼンタ), 7: 0x1F (シアン),
+      8-15: 0x00 (初期は黒)
+    </div>
+
+    <h2>3. 命令セット（拡張版）</h2>
+
+    <table>
+      <thead>
+        <tr><th>命令</th><th>コード</th><th>サイクル</th><th>説明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NOP</td><td>0x00</td><td>1</td><td>何もしない</td></tr>
+        <tr><td>LD A, #n</td><td>0x01 nn</td><td>2</td><td>A = n</td></tr>
+        <tr><td>LD B, #n</td><td>0x02 nn</td><td>2</td><td>B = n</td></tr>
+        <tr><td>LD X, #n</td><td>0x03 nn</td><td>2</td><td>X = n</td></tr>
+        <tr><td>LD A, [addr]</td><td>0x04 LL HH</td><td>3</td><td>A = メモリ[addr]</td></tr>
+        <tr><td>ST A, [addr]</td><td>0x05 LL HH</td><td>3</td><td>メモリ[addr] = A</td></tr>
+        <tr style="background: #002222;"><td>ST A, [X+nn] <span class="new-badge">NEW</span></td><td>0x06 LL HH</td><td>4</td><td>メモリ[X + (HH*256 + LL)] = A</td></tr>
+        <tr style="background: #002222;"><td>LD A, [X+nn] <span class="new-badge">NEW</span></td><td>0x07 LL HH</td><td>4</td><td>A = メモリ[X + (HH*256 + LL)]</td></tr>
+        <tr><td>MOV A, B</td><td>0x10</td><td>1</td><td>A = B</td></tr>
+        <tr><td>MOV B, A</td><td>0x11</td><td>1</td><td>B = A</td></tr>
+        <tr><td>MOV A, X</td><td>0x12</td><td>1</td><td>A = X</td></tr>
+        <tr><td>MOV X, A</td><td>0x13</td><td>1</td><td>X = A</td></tr>
+        <tr><td>ADD A, B</td><td>0x20</td><td>1</td><td>A = A + B (Carryフラグ設定)</td></tr>
+        <tr style="background: #002222;"><td>SUB A, B <span class="new-badge">NEW</span></td><td>0x21 nn</td><td>1</td><td>A = A - B (Carryフラグ設定)</td></tr>
+        <tr style="background: #002222;"><td>CMP A, B <span class="new-badge">NEW</span></td><td>0x22</td><td>1</td><td>A - B を計算してフラグのみ更新</td></tr>
+        <tr><td>INC A</td><td>0x25</td><td>1</td><td>A++</td></tr>
+        <tr><td>INC B</td><td>0x26</td><td>1</td><td>B++</td></tr>
+        <tr><td>INC X</td><td>0x27</td><td>1</td><td>X++</td></tr>
+        <tr style="background: #002222;"><td>DEC X <span class="new-badge">NEW</span></td><td>0x28</td><td>1</td><td>X-- (Zeroフラグ設定)</td></tr>
+        <tr><td>JMP addr</td><td>0x30 LL HH</td><td>3</td><td>PC = addr</td></tr>
+        <tr><td>JE addr</td><td>0x31 LL HH</td><td>3</td><td>Zフラグ=1ならジャンプ</td></tr>
+        <tr><td>JNE addr</td><td>0x32 LL HH</td><td>3</td><td>Zフラグ=0ならジャンプ</td></tr>
+        <tr><td>HALT</td><td>0xFF</td><td>1</td><td>停止</td></tr>
+      </tbody>
+    </table>
+
+    <div class="important">
+      <strong>重要:</strong> アドレスはLittle Endian（下位バイトが先）。例: 0x8000 → <code>00 80</code>
+    </div>
+
+    <div class="new">
+      <strong>拡張命令の詳細:</strong>
+      <ul style="margin: 10px 0 0 20px;">
+        <li><code>ST A, [X+nn]</code>: Xレジスタの値にベースアドレスnnを加えた位置に書き込み。VRAM描画に最適。</li>
+        <li><code>LD A, [X+nn]</code>: Xレジスタをインデックスとしてメモリ読み込み。</li>
+        <li><code>SUB A, B</code>: 減算命令。A < B の場合、Carryフラグ=1。</li>
+        <li><code>CMP A, B</code>: 比較命令。Aの値を変更せずにフラグのみ設定。</li>
+        <li><code>DEC X</code>: Xをデクリメント。ループカウンタに便利。</li>
+      </ul>
+    </div>
+
+    <h2>4. 実装例（JavaScript）</h2>
+
+    <h3>Step 1: 基本構造（変更なし）</h3>
+    <pre>class SimpleXVM {
+  constructor() {
+    // レジスタ
+    this.A = 0;
+    this.B = 0;
+    this.X = 0;
+    this.PC = 0xE000;
+    this.F = 0;  // bit0=Zero, bit1=Carry
+    
+    // メモリ
+    this.ram = new Uint8Array(0x8000);    // 32KB RAM
+    this.vram = new Uint8Array(0x4000);   // 16KB VRAM
+    this.palette = new Uint8Array(16);    // 16色パレット
+    this.rom = new Uint8Array(0x2000);    // 8KB ROM
+    
+    // デフォルトパレット設定
+    this.palette[0] = 0x00; // 黒
+    this.palette[1] = 0xFF; // 白
+    this.palette[2] = 0xE0; // 赤
+    this.palette[3] = 0x1C; // 緑
+    this.palette[4] = 0x03; // 青
+    this.palette[5] = 0xFC; // 黄
+    this.palette[6] = 0xE3; // マゼンタ
+    this.palette[7] = 0x1F; // シアン
+    
+    this.halted = false;
+    this.cycles = 0;
+  }
+}</pre>
+
+    <h3>Step 2: メモリアクセス（変更なし）</h3>
+    <pre>read8(addr) {
+  addr &= 0xFFFF;
+  if (addr < 0x8000) return this.ram[addr];
+  if (addr < 0xC000) return this.vram[addr - 0x8000];
+  if (addr < 0xC010) return this.palette[addr - 0xC000];
+  if (addr >= 0xE000) return this.rom[addr - 0xE000];
+  return 0;
+}
+
+write8(addr, val) {
+  addr &= 0xFFFF;
+  val &= 0xFF;
+  if (addr < 0x8000) this.ram[addr] = val;
+  else if (addr < 0xC000) this.vram[addr - 0x8000] = val;
+  else if (addr < 0xC010) this.palette[addr - 0xC000] = val;
+}
+
+read16(addr) {
+  return this.read8(addr) | (this.read8(addr + 1) << 8);
+}</pre>
+
+    <h3>Step 3: 命令実行（拡張版）</h3>
+    <pre>step() {
+  if (this.halted) return;
+  
+  const opcode = this.read8(this.PC++);
+  
+  switch(opcode) {
+    case 0x00: // NOP
+      break;
+      
+    case 0x01: // LD A, #n
+      this.A = this.read8(this.PC++);
+      this.updateZero(this.A);
+      break;
+      
+    case 0x02: // LD B, #n
+      this.B = this.read8(this.PC++);
+      this.updateZero(this.B);
+      break;
+      
+    case 0x03: // LD X, #n
+      this.X = this.read8(this.PC++);
+      this.updateZero(this.X);
+      break;
+      
+    case 0x04: // LD A, [addr]
+      this.A = this.read8(this.read16(this.PC));
+      this.PC += 2;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x05: // ST A, [addr]
+      this.write8(this.read16(this.PC), this.A);
+      this.PC += 2;
+      break;
+      
+    case 0x06: // ST A, [X+nn] --- NEW
+      const stBase = this.read16(this.PC);
+      this.PC += 2;
+      this.write8((stBase + this.X) & 0xFFFF, this.A);
+      break;
+      
+    case 0x07: // LD A, [X+nn] --- NEW
+      const ldBase = this.read16(this.PC);
+      this.PC += 2;
+      this.A = this.read8((ldBase + this.X) & 0xFFFF);
+      this.updateZero(this.A);
+      break;
+      
+    case 0x10: // MOV A, B
+      this.A = this.B;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x11: // MOV B, A
+      this.B = this.A;
+      this.updateZero(this.B);
+      break;
+      
+    case 0x12: // MOV A, X
+      this.A = this.X;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x13: // MOV X, A
+      this.X = this.A;
+      this.updateZero(this.X);
+      break;
+      
+    case 0x20: // ADD A, B
+      const addResult = this.A + this.B;
+      this.A = addResult & 0xFF;
+      this.updateZero(this.A);
+      this.F = (addResult > 0xFF) ? (this.F | 0x02) : (this.F & ~0x02);
+      break;
+      
+    case 0x21: // SUB A, B --- NEW
+      const subResult = this.A - this.B;
+      this.A = subResult & 0xFF;
+      this.updateZero(this.A);
+      this.F = (subResult < 0) ? (this.F | 0x02) : (this.F & ~0x02);
+      break;
+      
+    case 0x22: // CMP A, B --- NEW
+      const cmpResult = this.A - this.B;
+      this.updateZero(cmpResult & 0xFF);
+      this.F = (cmpResult < 0) ? (this.F | 0x02) : (this.F & ~0x02);
+      break;
+      
+    case 0x25: // INC A
+      this.A = (this.A + 1) & 0xFF;
+      this.updateZero(this.A);
+      break;
+      
+    case 0x26: // INC B
+      this.B = (this.B + 1) & 0xFF;
+      this.updateZero(this.B);
+      break;
+      
+    case 0x27: // INC X
+      this.X = (this.X + 1) & 0xFF;
+      this.updateZero(this.X);
+      break;
+      
+    case 0x28: // DEC X --- NEW
+      this.X = (this.X - 1) & 0xFF;
+      this.updateZero(this.X);
+      break;
+      
+    case 0x30: // JMP addr
+      this.PC = this.read16(this.PC);
+      break;
+      
+    case 0x31: // JE addr
+      const jeAddr = this.read16(this.PC);
+      this.PC += 2;
+      if (this.F & 0x01) this.PC = jeAddr;
+      break;
+      
+    case 0x32: // JNE addr
+      const jneAddr = this.read16(this.PC);
+      this.PC += 2;
+      if (!(this.F & 0x01)) this.PC = jneAddr;
+      break;
+      
+    case 0xFF: // HALT
+      this.halted = true;
+      break;
+  }
+}
+
+updateZero(val) {
+  this.F = (val === 0) ? (this.F | 0x01) : (this.F & ~0x01);
+}</pre>
+
+    <h3>Step 4: 画面描画（変更なし）</h3>
+    <pre>updateDisplay(canvas) {
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(128, 128);
+  const pixels = imageData.data;
+  
+  for (let y = 0; y < 128; y++) {
+    for (let x = 0; x < 128; x++) {
+      const colorIdx = this.vram[y * 128 + x] & 0x0F;
+      const rgb332 = this.palette[colorIdx];
+      const [r, g, b] = this.rgb332ToRGB(rgb332);
+      
+      const offset = (y * 128 + x) * 4;
+      pixels[offset] = r;
+      pixels[offset + 1] = g;
+      pixels[offset + 2] = b;
+      pixels[offset + 3] = 255;
+    }
+  }
+  
+  ctx.putImageData(imageData, 0, 0);
+}
+
+rgb332ToRGB(val) {
+  const r = ((val >> 5) & 0x07) * 36;
+  const g = ((val >> 2) & 0x07) * 36;
+  const b = (val & 0x03) * 85;
+  return [r, g, b];
+}</pre>
+
+    <h3>Step 5: メインループ（変更なし）</h3>
+    <pre>run(canvas) {
+  const runFrame = () => {
+    const cyclesPerFrame = 16667; // 1MHz / 60Hz
+    const start = this.cycles;
+    
+    while (this.cycles - start < cyclesPerFrame && !this.halted) {
+      this.step();
+      this.cycles++;
+    }
+    
+    this.updateDisplay(canvas);
+    
+    if (!this.halted) {
+      requestAnimationFrame(runFrame);
+    }
+  };
+  
+  runFrame();
+}
+
+// ROMロード
+loadROM(data) {
+  this.rom.set(data);
+  this.PC = 0xE000;
+  this.halted = false;
+}</pre>
+
+    <h2>5. サンプルプログラム（拡張版）</h2>
+
+    <h3>例1: 画面全体を赤で塗りつぶす（実用版）</h3>
+    <pre>; 拡張命令を使った効率的な実装
+; 128x128 = 16384ピクセルを塗りつぶす
+
+        LD A, #2           ; 0x01 0x02 (色番号2=赤)
+        LD X, #0           ; 0x03 0x00 (オフセット初期化)
+
+LOOP:   
+        ST A, [0x8000]     ; 0x06 00 80 (VRAM[0x8000 + X] = A)
+        INC X              ; 0x27
+        JNE LOOP           ; 0x32 03 E0 (X!=0なら継続)
+        
+        ; 256バイト完了、次の256バイトへ
+        ST A, [0x8100]     ; 0x06 00 81
+        INC X              ; 0x27
+        JNE LOOP2          ; 0x32 0A E0
+        
+        ; ... 以下同様に繰り返し（全64ループで16KB完了）
+        
+HALT                       ; 0xFF
+
+機械語例（最初のループのみ）:
+01 02 03 00 06 00 80 27 32 03 E0 FF</pre>
+
+    <h3>例2: 水平グラデーション描画</h3>
+    <pre>; 128ピクセルごとに色を変える水平グラデーション
+
+        LD A, #0           ; 0x01 0x00 (色番号初期化)
+        LD B, #0           ; 0x02 0x00 (Y座標)
+
+YLOOP:  
+        LD X, #0           ; 0x03 0x00 (X座標)
+        
+XLOOP:  
+        ; VRAM[Y*128 + X] = A を実現
+        ; 簡易版: 8ピクセルごとに色を変える
+        MOV A, X           ; 0x12 (X座標を色番号に)
+        ; X >> 3 で8ピクセルごと
+        ; 簡易実装では直接書き込み
+        
+        ST A, [0x8000]     ; 0x06 00 80 (VRAM[0x8000+X])
+        INC X              ; 0x27
+        CMP X, #128        ; 0x22 (X < 128 ?)
+        ; ... 比較とジャンプ
+        JNE XLOOP          ; 0x32 [XLOOPアドレス]
+        
+        INC B              ; 0x26 (次の行へ)
+        CMP B, #128        ; 0x22 (Y < 128 ?)
+        JNE YLOOP          ; 0x32 [YLOOPアドレス]
+        
+HALT                       ; 0xFF</pre>
+
+    <h3>例3: チェッカーボードパターン</h3>
+    <pre>; 8x8のチェッカーボード（白と黒の市松模様）
+
+        LD B, #0           ; 0x02 0x00 (Yカウンタ)
+
+OUTER:  
+        LD X, #0           ; 0x03 0x00 (Xカウンタ)
+        
+INNER:  
+        ; (X/8 + Y/8) の偶奇で色を決定
+        ; 簡易版: XとBの下位3bitを使う
+        MOV A, X           ; 0x12
+        ; ビット演算の代わりに加算で近似
+        ADD A, B           ; 0x20
+        ; Aの bit3 が色を決定 (0=黒, 1=白)
+        ; 実装を簡略化
+        
+        ST A, [0x8000]     ; 0x06 00 80
+        INC X              ; 0x27
+        CMP X, #128        ; X < 128なら継続
+        JNE INNER          ; 0x32 [INNERアドレス]
+        
+        INC B              ; 0x26
+        CMP B, #128        ; B < 128なら継続
+        JNE OUTER          ; 0x32 [OUTERアドレス]
+        
+HALT                       ; 0xFF</pre>
+
+    <div class="new">
+      <strong>実装のポイント:</strong>
+      <ul style="margin: 10px 0 0 20px;">
+        <li><code>ST A, [X+nn]</code> により、Xをループカウンタとして使いながら連続描画が可能</li>
+        <li><code>CMP</code> 命令により、レジスタを破壊せずに条件判定が可能</li>
+        <li><code>DEC X</code> により、カウントダウン型のループも実装可能</li>
+        <li>これらの組み合わせで、実用的な描画プログラムが作成できます</li>
+      </ul>
+    </div>
+
+    <h2>6. 完成までのステップ</h2>
+
+    <ol>
+      <li><strong>1時間目:</strong> メモリアクセス関数を実装</li>
+      <li><strong>2時間目:</strong> 基本命令(LD, ST, MOV)を実装</li>
+      <li><strong>3時間目:</strong> 算術・ジャンプ命令を実装</li>
+      <li><strong>4時間目:</strong> 拡張命令(ST [X+nn], CMP, DEC)を実装</li>
+      <li><strong>5時間目:</strong> 画面描画機能を実装</li>
+      <li><strong>6時間目:</strong> テストプログラムで動作確認</li>
+    </ol>
+
+    <div class="important">
+      <strong>完成目標:</strong> 6時間で動作するエミュレータを実装し、実用的なグラフィックスプログラムを動かす!
+    </div>
+
+    <h2>7. 描画アルゴリズム例</h2>
+
+    <h3>直線描画（ブレゼンハムのアルゴリズム簡易版）</h3>
+    <pre>; 水平線の描画例
+; (X1, Y) から (X2, Y) まで色Cで描画
+
+DrawHLine:
+        LD A, C            ; 色を設定
+        LD X, X1           ; 開始X座標
+        
+        ; VRAMオフセット = Y * 128 を計算
+        ; 簡易版では固定Y=64を想定
+        
+HLINE:  
+        ST A, [0x8000 + 64*128]  ; Y=64の行に描画
+        INC X
+        CMP X, X2          ; X2に到達？
+        JNE HLINE
+        
+        RET</pre>
+
+    <h3>矩形塗りつぶし</h3>
+    <pre>; (X1,Y1) から (X2,Y2) の矩形を色Cで塗る
+
+FillRect:
+        LD A, C            ; 色
+        LD B, Y1           ; 開始Y
+        
+RECT_Y:
+        LD X, X1           ; 各行の開始X
+        
+RECT_X:
+        ; VRAM[B * 128 + X] = A を計算
+        ; B * 128 = B << 7
+        ; 実装では直接アドレス計算が必要
+        
+        ST A, [0x8000]     ; 計算したアドレスに書き込み
+        INC X
+        CMP X, X2
+        JNE RECT_X
+        
+        INC B
+        CMP B, Y2
+        JNE RECT_Y
+        
+        RET</pre>
+
+    <h2>8. 発展課題</h2>
+
+    <ul>
+      <li>キーボード入力対応（I/Oポート追加: 0xD000-0xD001）</li>
+      <li>スプライト機能（専用VRAM領域: 0xBF00-0xBFFF）</li>
+      <li>サウンド機能（単純な矩形波: I/Oポート 0xD100-0xD103）</li>
+      <li>アセンブラの実装（ニモニック → 機械語変換）</li>
+      <li>簡易BASICインタプリタ</li>
+      <li>ビット演算命令（AND, OR, XOR, SHL, SHR）</li>
+      <li>スタック操作命令（PUSH, POP, CALL, RET）</li>
+    </ul>
+
+    <h2>9. 互換性について</h2>
+
+    <div class="note">
+      <strong>後方互換性:</strong><br>
+      v1.0の仕様で書かれたプログラムは、v1.1でも完全に動作します。追加された命令コード（0x06, 0x07, 0x21, 0x22, 0x28）は、v1.0では未定義だったため、既存のプログラムには影響しません。
+      <br><br>
+      <strong>前方互換性:</strong><br>
+      v1.1の拡張命令を使ったプログラムは、v1.0実装では動作しません。配布時には仕様バージョンを明記してください。
+    </div>
+
+    <h2>10. 性能最適化のヒント</h2>
+
+    <ul>
+      <li><strong>ループの最適化:</strong> <code>DEC X; JNE</code> の組み合わせは、<code>INC X; CMP X, #n; JNE</code> より高速</li>
+      <li><strong>レジスタの活用:</strong> 頻繁にアクセスする値はメモリではなくレジスタに保持</li>
+      <li><strong>VRAM書き込み:</strong> <code>ST A, [X+0x8000]</code> を使い、Xをインクリメントしながら連続描画</li>
+      <li><strong>パレット変更:</strong> 描画後にパレットを変更することで、画面全体の色を瞬時に変更可能</li>
+    </ul>
+
+    <div style="margin-top: 50px; padding: 20px; background: #0a0a0a; border: 1px solid #0f0; text-align: center;">
+      <h3 style="color: #0f0; margin-top: 0;">XVM-8S 拡張仕様書 v1.1</h3>
+      <p style="color: #888;">誰でも実装できる最小限の8bitマシン（拡張版）</p>
+      <p style="color: #0ff; font-size: 12px;">
+        CC0 Public Domain - 自由に使用・改変・配布できます
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
