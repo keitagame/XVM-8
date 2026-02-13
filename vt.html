@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>XVM-8S 仕様書 v2.0 - テキストモード拡張版</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    @font-face {
+        font-family: "Renner";
+        src: url("./Renner.ttf") format("truetype");
+        font-display: swap;
+      }
+    body {
+      background: #000;
+      font-family: "Renner",sans-serif;
+      margin: 0;
+      padding: 20px;
+      color: #fff;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 300;
+      border-bottom: 2px solid #0f0;
+      padding-bottom: 10px;
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 400;
+      color: #0ff;
+      margin-top: 40px;
+    }
+    h3 {
+      font-size: 18px;
+      font-weight: 400;
+      color: #ff0;
+      margin-top: 30px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th {
+      background: #1a1a1a;
+      font-weight: 500;
+    }
+    code {
+      background: #1a1a1a;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      color: #0f0;
+    }
+    pre {
+      background: #0f0f0f;
+      border: 1px solid #333;
+      padding: 15px;
+      overflow-x: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .note {
+      background: #1a1a00;
+      border-left: 4px solid #ff0;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+    .important {
+      background: #1a0000;
+      border-left: 4px solid #f00;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+    .new {
+      background: #001a00;
+      border-left: 4px solid #0f0;
+      padding: 12px 15px;
+      margin: 15px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>XVM-8S 仕様書 v2.0 - テキストモード拡張版</h1>
+    <p style="color: #888;">超シンプルな8bitバーチャルマシン - グラフィック + テキスト出力</p>
+
+    <div class="new">
+      <strong>v2.0 新機能:</strong> フォントバイナリを読み込み、テキスト文字を画面に描画できるテキストモードを追加。ゲームモードと併用可能。
+    </div>
+
+    <div class="note">
+      <strong>コンセプト:</strong> 初心者が1日で実装できる最小限のバーチャルマシン。グラフィック描画とテキスト出力の両方に対応し、命令数は25個以下。
+    </div>
+
+    <h2>1. 基本仕様</h2>
+    
+    <h3>CPU</h3>
+    <ul>
+      <li>8bit CPU</li>
+      <li>アドレス空間: 16bit (64KB)</li>
+      <li>クロック: 1MHz / リフレッシュ: 60Hz</li>
+    </ul>
+
+    <h3>レジスタ</h3>
+    <table>
+      <tr><th>名前</th><th>サイズ</th><th>説明</th></tr>
+      <tr><td><code>A</code></td><td>8bit</td><td>汎用レジスタ</td></tr>
+      <tr><td><code>B</code></td><td>8bit</td><td>汎用レジスタ</td></tr>
+      <tr><td><code>X</code></td><td>8bit</td><td>インデックスレジスタ</td></tr>
+      <tr><td><code>PC</code></td><td>16bit</td><td>プログラムカウンタ（初期値: 0xE000）</td></tr>
+      <tr><td><code>F</code></td><td>8bit</td><td>フラグ（bit0=Zero）</td></tr>
+    </table>
+
+    <h3>メモリマップ（拡張版）</h3>
+    <table>
+      <tr><th>アドレス</th><th>サイズ</th><th>説明</th></tr>
+      <tr><td>0x0000-0x7FFF</td><td>32KB</td><td>RAM</td></tr>
+      <tr><td>0x8000-0xBFFF</td><td>16KB</td><td><strong>VRAM（グラフィック専用）</strong></td></tr>
+      <tr><td>0xC000-0xC00F</td><td>16B</td><td>パレット（16色）</td></tr>
+      <tr><td class="new"><strong>0xC010-0xC08F</strong></td><td class="new"><strong>128B</strong></td><td class="new"><strong>テキストバッファ（16x8文字）</strong></td></tr>
+      <tr><td class="new"><strong>0xC090-0xC091</strong></td><td class="new"><strong>2B</strong></td><td class="new"><strong>テキストカーソル位置（X, Y）</strong></td></tr>
+      <tr><td class="new"><strong>0xC092</strong></td><td class="new"><strong>1B</strong></td><td class="new"><strong>テキスト制御レジスタ</strong></td></tr>
+      <tr><td class="new"><strong>0xD000-0xD7FF</strong></td><td class="new"><strong>2KB</strong></td><td class="new"><strong>フォントデータ領域（256文字×8バイト）</strong></td></tr>
+      <tr><td>0xE000-0xFFFF</td><td>8KB</td><td>ROM（プログラム領域）</td></tr>
+    </table>
+
+    <h2>2. グラフィック仕様（従来通り）</h2>
+
+    <h3>画面</h3>
+    <ul>
+      <li>解像度: <strong>128x128 ピクセル</strong></li>
+      <li>色数: <strong>16色</strong>（4bit インデックスカラー）</li>
+      <li>VRAM配置: <code>VRAM[y * 128 + x]</code> = 色番号（0-15）</li>
+    </ul>
+
+    <h3>カラーパレット</h3>
+    <p>16色のパレットは <code>0xC000-0xC00F</code> に配置。各色は8bit RGB332形式:</p>
+    <pre>RGB332形式:
+RRR GGG BB
+|||  |  ||
+|||  |  ++-- 青 (0-3)  ×85 → 0-255
+|||  +------ 緑 (0-7)  ×36 → 0-252
++++--------- 赤 (0-7)  ×36 → 0-252</pre>
+
+    <div class="note">
+      <strong>デフォルトパレット:</strong><br>
+      0: 0x00 (黒), 1: 0xFF (白), 2: 0xE0 (赤), 3: 0x1C (緑), 
+      4: 0x03 (青), 5: 0xFC (黄), 6: 0xE3 (マゼンタ), 7: 0x1F (シアン),
+      8-15: 0x00 (初期は黒)
+    </div>
+
+    <h2 class="new">3. テキストモード仕様（新機能）</h2>
+
+    <h3>テキストバッファ</h3>
+    <ul>
+      <li>アドレス: <code>0xC010-0xC08F</code> (128バイト)</li>
+      <li>サイズ: <strong>16文字（幅） × 8行（高さ）</strong> = 128文字</li>
+      <li>配置: <code>TextBuffer[y * 16 + x]</code> = ASCII文字コード</li>
+      <li>各セルには1バイトのASCII文字コード（0x00-0xFF）が格納される</li>
+    </ul>
+
+    <h3>フォントデータ形式</h3>
+    <ul>
+      <li>アドレス: <code>0xD000-0xD7FF</code> (2KB)</li>
+      <li>フォーマット: <strong>8x8ピクセル ビットマップフォント</strong></li>
+      <li>各文字: 8バイト（縦8ピクセル × 横8ビット）</li>
+      <li>文字数: 256文字（ASCII 0x00-0xFF）</li>
+    </ul>
+
+    <div class="note">
+      <strong>フォントバイトの構造:</strong><br>
+      1文字あたり8バイトで表現。各バイトが1行（横8ピクセル）を表す。
+      <pre>文字コード C のフォントデータ:
+アドレス 0xD000 + (C × 8) ～ 0xD000 + (C × 8 + 7)
+
+例: 'A' (0x41) のフォントデータ
+0xD208-0xD20F に格納
+  0x18  → 00011000  (行0)
+  0x24  → 00100100  (行1)
+  0x42  → 01000010  (行2)
+  0x7E  → 01111110  (行3)
+  0x42  → 01000010  (行4)
+  0x42  → 01000010  (行5)
+  0x42  → 01000010  (行6)
+  0x00  → 00000000  (行7)
+
+ビットが1の場所が前景色、0の場所が背景色</pre>
+    </div>
+
+    <h3>テキスト制御レジスタ</h3>
+    <table>
+      <tr><th>アドレス</th><th>名前</th><th>説明</th></tr>
+      <tr><td>0xC090</td><td>CURSOR_X</td><td>カーソルX座標 (0-15)</td></tr>
+      <tr><td>0xC091</td><td>CURSOR_Y</td><td>カーソルY座標 (0-7)</td></tr>
+      <tr><td>0xC092</td><td>TEXT_CTRL</td><td>制御フラグ<br>
+        bit0: テキスト表示ON/OFF (1=ON, 0=OFF)<br>
+        bit1: 自動スクロール (1=ON, 0=OFF)<br>
+        bit2-3: 前景色 (0-15)<br>
+        bit4-7: 背景色 (0-15)
+      </td></tr>
+    </table>
+
+    <div class="note">
+      <strong>TEXT_CTRL のビット配置:</strong>
+      <pre>bit 7-4: 背景色 (0-15)
+bit 3-2: 前景色 (0-15)
+bit 1:   自動スクロール
+bit 0:   テキスト表示有効
+
+例: 0x1D = 0001 1101
+  → 背景色=1(白), 前景色=3(緑), スクロールON, 表示ON</pre>
+    </div>
+
+    <h3>テキスト描画の動作</h3>
+    <ol>
+      <li>プログラムがテキストバッファ（0xC010～）に文字コードを書き込む</li>
+      <li>TEXT_CTRL の bit0 が 1 の場合、テキストが画面に描画される</li>
+      <li>各文字は フォントデータ領域（0xD000～）から対応するビットマップを読み込む</li>
+      <li>ビット=1 → 前景色、ビット=0 → 背景色 でVRAMに描画</li>
+      <li>テキストは画面左上 (0,0) から開始し、1文字=8x8ピクセルで配置</li>
+    </ol>
+
+    <h3>描画優先度</h3>
+    <ul>
+      <li><strong>背景レイヤー:</strong> VRAM（グラフィック）</li>
+      <li><strong>前景レイヤー:</strong> テキスト（TEXT_CTRL bit0=1の場合）</li>
+      <li>テキストの背景色が0（黒）の場合、透過として扱われVRAMが透けて見える</li>
+    </ul>
+
+    <h2>4. 命令セット（拡張版）</h2>
+
+    <table>
+      <thead>
+        <tr><th>命令</th><th>コード</th><th>サイクル</th><th>説明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>NOP</td><td>0x00</td><td>1</td><td>何もしない</td></tr>
+        <tr><td>LD A, #n</td><td>0x01 nn</td><td>2</td><td>A = n</td></tr>
+        <tr><td>LD B, #n</td><td>0x02 nn</td><td>2</td><td>B = n</td></tr>
+        <tr><td>LD X, #n</td><td>0x03 nn</td><td>2</td><td>X = n</td></tr>
+        <tr><td>LD A, [addr]</td><td>0x04 LL HH</td><td>3</td><td>A = メモリ[addr]</td></tr>
+        <tr><td>ST A, [addr]</td><td>0x05 LL HH</td><td>3</td><td>メモリ[addr] = A</td></tr>
+        <tr><td>MOV A, B</td><td>0x10</td><td>1</td><td>A = B</td></tr>
+        <tr><td>MOV B, A</td><td>0x11</td><td>1</td><td>B = A</td></tr>
+        <tr><td>MOV A, X</td><td>0x12</td><td>1</td><td>A = X</td></tr>
+        <tr><td>MOV X, A</td><td>0x13</td><td>1</td><td>X = A</td></tr>
+        <tr><td>ADD A, B</td><td>0x20</td><td>1</td><td>A = A + B</td></tr>
+        <tr><td>INC A</td><td>0x25</td><td>1</td><td>A++</td></tr>
+        <tr><td>INC B</td><td>0x26</td><td>1</td><td>B++</td></tr>
+        <tr><td>INC X</td><td>0x27</td><td>1</td><td>X++</td></tr>
+        <tr><td>JMP addr</td><td>0x30 LL HH</td><td>3</td><td>PC = addr</td></tr>
+        <tr><td>JE addr</td><td>0x31 LL HH</td><td>3</td><td>Zフラグ=1ならジャンプ</td></tr>
+        <tr><td>JNE addr</td><td>0x32 LL HH</td><td>3</td><td>Zフラグ=0ならジャンプ</td></tr>
+        <tr class="new"><td><strong>PUTC A</strong></td><td class="new"><strong>0x40</strong></td><td class="new"><strong>2</strong></td><td class="new"><strong>カーソル位置に文字を出力し、カーソルを進める</strong></td></tr>
+        <tr class="new"><td><strong>PUTS [addr]</strong></td><td class="new"><strong>0x41 LL HH</strong></td><td class="new"><strong>4</strong></td><td class="new"><strong>0終端文字列を出力</strong></td></tr>
+        <tr class="new"><td><strong>CLS</strong></td><td class="new"><strong>0x42</strong></td><td class="new"><strong>10</strong></td><td class="new"><strong>テキストバッファをクリア</strong></td></tr>
+        <tr class="new"><td><strong>SETXY X, Y</strong></td><td class="new"><strong>0x43 xx yy</strong></td><td class="new"><strong>2</strong></td><td class="new"><strong>カーソル位置を設定</strong></td></tr>
+        <tr><td>HALT</td><td>0xFF</td><td>1</td><td>停止</td></tr>
+      </tbody>
+    </table>
+
+    <div class="important">
+      <strong>重要:</strong> アドレスはLittle Endian（下位バイトが先）。例: 0x8000 → <code>00 80</code>
+    </div>
+
+    <h3>新規テキスト命令の詳細</h3>
+
+    <h4>PUTC A (0x40)</h4>
+    <ul>
+      <li>レジスタAの値を現在のカーソル位置に文字として出力</li>
+      <li>カーソルを自動的に右に1つ進める</li>
+      <li>行末（X=16）に達した場合、自動改行（Y++, X=0）</li>
+      <li>画面下端（Y=8）で自動スクロールが有効な場合、上にスクロール</li>
+    </ul>
+
+    <h4>PUTS [addr] (0x41 LL HH)</h4>
+    <ul>
+      <li>指定アドレスから0x00で終端された文字列を出力</li>
+      <li>各文字に対してPUTCと同等の処理を実行</li>
+      <li>改行コード（0x0A）で次行へ移動</li>
+    </ul>
+
+    <h4>CLS (0x42)</h4>
+    <ul>
+      <li>テキストバッファ全体を0x20（スペース）でクリア</li>
+      <li>カーソルを (0, 0) にリセット</li>
+    </ul>
+
+    <h4>SETXY X, Y (0x43 xx yy)</h4>
+    <ul>
+      <li>カーソル位置を指定座標に設定</li>
+      <li>X: 0-15, Y: 0-7 の範囲</li>
+    </ul>
+
+    <h2>5. 実装例（JavaScript）拡張版</h2>
+
+    <h3>Step 1: 基本構造（拡張）</h3>
+    <pre>class XVM8S_TextMode {
+  constructor() {
+    // レジスタ
+    this.A = 0;
+    this.B = 0;
+    this.X = 0;
+    this.PC = 0xE000;
+    this.F = 0;
+    
+    // メモリ
+    this.ram = new Uint8Array(0x8000);      // 32KB RAM
+    this.vram = new Uint8Array(0x4000);     // 16KB VRAM
+    this.palette = new Uint8Array(16);      // 16色パレット
+    this.textBuffer = new Uint8Array(128);  // テキストバッファ (16x8)
+    this.fontData = new Uint8Array(2048);   // フォントデータ (256文字×8バイト)
+    this.rom = new Uint8Array(0x2000);      // 8KB ROM
+    
+    // テキスト制御
+    this.cursorX = 0;
+    this.cursorY = 0;
+    this.textCtrl = 0x1D; // デフォルト: 表示ON、前景=白、背景=黒
+    
+    // デフォルトパレット設定
+    this.initPalette();
+    
+    // デフォルトフォントをロード（実装により異なる）
+    this.loadDefaultFont();
+    
+    this.halted = false;
+    this.cycles = 0;
+  }
+  
+  initPalette() {
+    this.palette[0] = 0x00; // 黒
+    this.palette[1] = 0xFF; // 白
+    this.palette[2] = 0xE0; // 赤
+    this.palette[3] = 0x1C; // 緑
+    this.palette[4] = 0x03; // 青
+    this.palette[5] = 0xFC; // 黄
+    this.palette[6] = 0xE3; // マゼンタ
+    this.palette[7] = 0x1F; // シアン
+  }
+  
+  loadDefaultFont() {
+    // 基本的なASCIIフォントをロード
+    // 実際の実装では外部バイナリから読み込む
+    // ここでは例として 'A' (0x41) のフォントのみ定義
+    const fontA = [0x18, 0x24, 0x42, 0x7E, 0x42, 0x42, 0x42, 0x00];
+    for (let i = 0; i < 8; i++) {
+      this.fontData[0x41 * 8 + i] = fontA[i];
+    }
+  }
+}</pre>
+
+    <h3>Step 2: メモリアクセス（拡張）</h3>
+    <pre>read8(addr) {
+  addr &= 0xFFFF;
+  if (addr < 0x8000) return this.ram[addr];
+  if (addr < 0xC000) return this.vram[addr - 0x8000];
+  if (addr < 0xC010) return this.palette[addr - 0xC000];
+  if (addr < 0xC090) return this.textBuffer[addr - 0xC010];
+  if (addr === 0xC090) return this.cursorX;
+  if (addr === 0xC091) return this.cursorY;
+  if (addr === 0xC092) return this.textCtrl;
+  if (addr >= 0xD000 && addr < 0xD800) return this.fontData[addr - 0xD000];
+  if (addr >= 0xE000) return this.rom[addr - 0xE000];
+  return 0;
+}
+
+write8(addr, val) {
+  addr &= 0xFFFF;
+  val &= 0xFF;
+  if (addr < 0x8000) this.ram[addr] = val;
+  else if (addr < 0xC000) this.vram[addr - 0x8000] = val;
+  else if (addr < 0xC010) this.palette[addr - 0xC000] = val;
+  else if (addr < 0xC090) this.textBuffer[addr - 0xC010] = val;
+  else if (addr === 0xC090) this.cursorX = val & 0x0F;
+  else if (addr === 0xC091) this.cursorY = val & 0x07;
+  else if (addr === 0xC092) this.textCtrl = val;
+  else if (addr >= 0xD000 && addr < 0xD800) this.fontData[addr - 0xD000] = val;
+}
+
+read16(addr) {
+  return this.read8(addr) | (this.read8(addr + 1) << 8);
+}</pre>
+
+    <h3>Step 3: テキスト命令の実装</h3>
+    <pre>// PUTC命令: カーソル位置に文字を出力
+putChar(charCode) {
+  const pos = this.cursorY * 16 + this.cursorX;
+  this.textBuffer[pos] = charCode;
+  
+  // カーソルを進める
+  this.cursorX++;
+  if (this.cursorX >= 16) {
+    this.cursorX = 0;
+    this.cursorY++;
+    
+    // 自動スクロール
+    if (this.cursorY >= 8 && (this.textCtrl & 0x02)) {
+      this.scrollText();
+      this.cursorY = 7;
+    } else if (this.cursorY >= 8) {
+      this.cursorY = 0; // スクロールなしの場合は先頭へ
+    }
+  }
+}
+
+// テキストバッファを1行スクロール
+scrollText() {
+  for (let y = 0; y < 7; y++) {
+    for (let x = 0; x < 16; x++) {
+      this.textBuffer[y * 16 + x] = this.textBuffer[(y + 1) * 16 + x];
+    }
+  }
+  // 最下行をクリア
+  for (let x = 0; x < 16; x++) {
+    this.textBuffer[7 * 16 + x] = 0x20; // スペース
+  }
+}
+
+// PUTS命令: 文字列を出力
+putString(addr) {
+  while (true) {
+    const ch = this.read8(addr++);
+    if (ch === 0x00) break; // NULL終端
+    
+    if (ch === 0x0A) { // 改行コード
+      this.cursorX = 0;
+      this.cursorY++;
+      if (this.cursorY >= 8 && (this.textCtrl & 0x02)) {
+        this.scrollText();
+        this.cursorY = 7;
+      }
+    } else {
+      this.putChar(ch);
+    }
+  }
+}
+
+// CLS命令: 画面クリア
+clearText() {
+  for (let i = 0; i < 128; i++) {
+    this.textBuffer[i] = 0x20; // スペース
+  }
+  this.cursorX = 0;
+  this.cursorY = 0;
+}</pre>
+
+    <h3>Step 4: 命令実行（テキスト命令追加）</h3>
+    <pre>step() {
+  if (this.halted) return;
+  
+  const opcode = this.read8(this.PC++);
+  
+  switch(opcode) {
+    // ... 既存の命令 (0x00-0x32) ...
+    
+    case 0x40: // PUTC A
+      this.putChar(this.A);
+      break;
+      
+    case 0x41: // PUTS [addr]
+      const strAddr = this.read16(this.PC);
+      this.PC += 2;
+      this.putString(strAddr);
+      break;
+      
+    case 0x42: // CLS
+      this.clearText();
+      break;
+      
+    case 0x43: // SETXY X, Y
+      this.cursorX = this.read8(this.PC++) & 0x0F;
+      this.cursorY = this.read8(this.PC++) & 0x07;
+      break;
+      
+    case 0xFF: // HALT
+      this.halted = true;
+      break;
+  }
+}</pre>
+
+    <h3>Step 5: テキスト描画処理</h3>
+    <pre>// テキストレイヤーをVRAMに合成
+renderText() {
+  if (!(this.textCtrl & 0x01)) return; // テキスト表示OFF
+  
+  const fgColor = (this.textCtrl >> 2) & 0x03;
+  const bgColor = (this.textCtrl >> 4) & 0x0F;
+  
+  for (let ty = 0; ty < 8; ty++) {
+    for (let tx = 0; tx < 16; tx++) {
+      const charCode = this.textBuffer[ty * 16 + tx];
+      this.renderChar(tx * 8, ty * 8, charCode, fgColor, bgColor);
+    }
+  }
+}
+
+// 1文字を描画
+renderChar(x, y, charCode, fgColor, bgColor) {
+  const fontOffset = charCode * 8;
+  
+  for (let row = 0; row < 8; row++) {
+    const fontByte = this.fontData[fontOffset + row];
+    
+    for (let col = 0; col < 8; col++) {
+      const bit = (fontByte >> (7 - col)) & 1;
+      const color = bit ? fgColor : bgColor;
+      
+      const px = x + col;
+      const py = y + row;
+      
+      // 背景色が0の場合は透過（VRAMを残す）
+      if (px < 128 && py < 128 && (color !== 0 || bit === 1)) {
+        this.vram[py * 128 + px] = color;
+      }
+    }
+  }
+}</pre>
+
+    <h3>Step 6: メインループ（テキスト対応）</h3>
+    <pre>updateDisplay(canvas) {
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(128, 128);
+  const pixels = imageData.data;
+  
+  // テキストをVRAMに描画
+  this.renderText();
+  
+  // VRAMを画面に描画
+  for (let y = 0; y < 128; y++) {
+    for (let x = 0; x < 128; x++) {
+      const colorIdx = this.vram[y * 128 + x] & 0x0F;
+      const rgb332 = this.palette[colorIdx];
+      const [r, g, b] = this.rgb332ToRGB(rgb332);
+      
+      const offset = (y * 128 + x) * 4;
+      pixels[offset] = r;
+      pixels[offset + 1] = g;
+      pixels[offset + 2] = b;
+      pixels[offset + 3] = 255;
+    }
+  }
+  
+  ctx.putImageData(imageData, 0, 0);
+}
+
+rgb332ToRGB(val) {
+  const r = ((val >> 5) & 0x07) * 36;
+  const g = ((val >> 2) & 0x07) * 36;
+  const b = (val & 0x03) * 85;
+  return [r, g, b];
+}</pre>
+
+    <h2>6. フォントバイナリの読み込み</h2>
+
+    <h3>フォントファイル形式</h3>
+    <ul>
+      <li>ファイル名: <code>font.bin</code></li>
+      <li>サイズ: 2048バイト (256文字 × 8バイト)</li>
+      <li>形式: 生バイナリ（ヘッダなし）</li>
+      <li>各文字は連続した8バイトで、順番はASCIIコード順</li>
+    </ul>
+
+    <h3>JavaScriptでの読み込み例</h3>
+    <pre>async loadFontFromFile(url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  const fontData = new Uint8Array(arrayBuffer);
+  
+  if (fontData.length !== 2048) {
+    console.error('フォントファイルサイズが不正です');
+    return;
+  }
+  
+  // フォントデータ領域にコピー
+  this.fontData.set(fontData);
+  console.log('フォントをロードしました');
+}
+
+// 使用例
+const vm = new XVM8S_TextMode();
+await vm.loadFontFromFile('font.bin');</pre>
+
+    <h3>フォント作成ツール</h3>
+    <p>8x8フォントを作成する方法:</p>
+    <ul>
+      <li><strong>方法1:</strong> テキストエディタで16進数を手入力</li>
+      <li><strong>方法2:</strong> ピクセルエディタで描画し、バイナリ変換</li>
+      <li><strong>方法3:</strong> 既存のビットマップフォント（例: GNU Unifont）を変換</li>
+    </ul>
+
+    <h2>7. サンプルプログラム</h2>
+
+    <h3>例1: "HELLO WORLD" を表示</h3>
+    <pre>; テキストモードを初期化
+LD A, #0x1D        ; 0x01 0x1D (表示ON、前景=白、背景=黒)
+ST A, [0xC092]     ; 0x05 92 C0 (TEXT_CTRL設定)
+
+CLS                ; 0x42 (画面クリア)
+
+; 文字列のアドレスをROMに配置（例: 0xE100）
+PUTS [0xE100]      ; 0x41 00 E1
+
+HALT               ; 0xFF
+
+; 文字列データ (0xE100から)
+.data:
+"HELLO WORLD", 0x00
+
+機械語:
+01 1D 05 92 C0 42 41 00 E1 FF
+; 0xE100: 48 45 4C 4C 4F 20 57 4F 52 4C 44 00 (HELLO WORLD)</pre>
+
+    <h3>例2: カウントアップ表示</h3>
+    <pre>; 0から9までカウントアップ
+LD A, #0x1D        ; テキスト有効化
+ST A, [0xC092]
+CLS
+
+LD B, #0           ; カウンタ初期化
+
+LOOP:
+  LD A, B
+  ADD A, #0x30     ; '0' のASCIIコード (0x30) を加算
+  PUTC A           ; 0x40 (文字出力)
+  
+  INC B
+  LD A, B
+  ; B < 10 ?
+  ; 簡易比較
+  JNE LOOP
+
+HALT
+
+機械語:
+01 1D 05 92 C0 42 02 00 11 01 30 20 40 26 11 32 [LOOP] FF</pre>
+
+    <h3>例3: グラフィックとテキストの併用</h3>
+    <pre>; 背景にグラデーション、前景にテキスト
+; Step 1: VRAMに背景描画
+LD A, #2           ; 赤色
+LD X, #0
+BG_LOOP:
+  ST A, [0x8000 + X] ; ※実際は計算が必要
+  INC X
+  INC A
+  JNE BG_LOOP
+
+; Step 2: テキスト表示
+LD A, #0x39        ; 前景=白(1)、背景=透過(0)、表示ON
+ST A, [0xC092]
+
+CLS
+PUTS [STRING_ADDR]
+
+HALT
+
+; 文字列
+.data:
+"  XVM-8S  ", 0x0A, "TEXT MODE!", 0x00</pre>
+
+    <h2>8. モード切り替えの実装</h2>
+
+    <h3>ゲームモードとテキストモードの切り替え</h3>
+    <p>TEXT_CTRL の bit0 を制御することで、動的にモードを切り替えられます:</p>
+    
+    <pre>// ゲームモード（テキストOFF）
+LD A, #0x00
+ST A, [0xC092]     ; TEXT_CTRL = 0x00
+
+// テキストモード（テキストON）
+LD A, #0x1D
+ST A, [0xC092]     ; TEXT_CTRL = 0x1D
+
+// 混合モード（背景透過）
+LD A, #0x0D        ; 背景=0(透過)、前景=1(白)
+ST A, [0xC092]</pre>
+
+    <h3>用途別設定例</h3>
+    <table>
+      <tr><th>モード</th><th>TEXT_CTRL値</th><th>説明</th></tr>
+      <tr><td>純粋グラフィック</td><td>0x00</td><td>テキスト非表示</td></tr>
+      <tr><td>純粋テキスト</td><td>0x1D</td><td>白文字・黒背景</td></tr>
+      <tr><td>オーバーレイ</td><td>0x0D</td><td>背景透過、VRAMが見える</td></tr>
+      <tr><td>デバッグ情報</td><td>0x39</td><td>緑文字・黒背景</td></tr>
+    </table>
+
+    <h2>9. 完成までのステップ（拡張版）</h2>
+
+    <ol>
+      <li><strong>1時間目:</strong> メモリアクセス関数を実装（テキスト領域含む）</li>
+      <li><strong>2時間目:</strong> 基本命令(LD, ST, MOV)を実装</li>
+      <li><strong>3時間目:</strong> 算術・ジャンプ命令を実装</li>
+      <li><strong>4時間目:</strong> グラフィック描画機能を実装</li>
+      <li><strong>5時間目:</strong> フォント読み込みとテキスト描画を実装</li>
+      <li><strong>6時間目:</strong> テキスト命令（PUTC, PUTS, CLS）を実装</li>
+      <li><strong>7時間目:</strong> テストプログラムで動作確認</li>
+    </ol>
+
+    <div class="important">
+      <strong>完成目標:</strong> 7-8時間で、グラフィックとテキストの両方を扱えるエミュレータを実装!
+    </div>
+
+    <h2>10. 発展課題</h2>
+
+    <ul>
+      <li>可変幅フォント対応</li>
+      <li>複数フォントの切り替え</li>
+      <li>テキストカラーの文字単位設定</li>
+      <li>スプライトとテキストの合成</li>
+      <li>簡易ターミナルエミュレータ</li>
+      <li>BASICインタプリタでのテキスト出力</li>
+      <li>日本語フォント対応（16x16ビットマップ）</li>
+    </ul>
+
+    <h2>11. 推奨フォントリソース</h2>
+
+    <div class="note">
+      <strong>無料で利用可能な8x8フォント:</strong>
+      <ul>
+        <li><strong>GNU Unifont</strong> - 完全なUnicodeカバレッジ</li>
+        <li><strong>Tamzen Font</strong> - プログラミング向け</li>
+        <li><strong>Terminus Font</strong> - ターミナル用</li>
+        <li><strong>VGA Font</strong> - クラシックPC風</li>
+      </ul>
+      これらのフォントから必要な256文字（ASCII）を抽出して2KBバイナリを作成
+    </div>
+
+    <div style="margin-top: 50px; padding: 20px; background: #0a0a0a; border: 1px solid #0f0; text-align: center;">
+      <h3 style="color: #0f0; margin-top: 0;">XVM-8S v2.0 仕様書</h3>
+      <p style="color: #888;">グラフィックとテキスト出力に対応した8bitバーチャルマシン</p>
+      <p style="color: #0ff; font-size: 12px;">
+        CC0 Public Domain - 自由に使用・改変・配布できます
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
