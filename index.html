@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <title>XVM-16 Lite + MIDI 仕様書</title>
+  <title>XVM-16 Lite 完全版仕様書（MIDI対応）</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root {
@@ -46,14 +46,14 @@
       margin-top: 20px;
     }
     .container {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin: 15px 0;
-      font-size: 14px;
+      font-size: 13px;
     }
     th, td {
       border: 1px solid #444;
@@ -108,455 +108,900 @@
 </head>
 <body>
   <div class="container">
-    <h1>XVM-16 Lite + MIDI 仕様書</h1>
-    <p style="color: #888;">シンプル8bitバーチャルマシン - 命令削減 + MIDI音源版</p>
+    <h1>XVM-16 Lite 完全版仕様書（MIDI対応）</h1>
+    <p style="color: #888;">エミュレーター実装用完全仕様 - 25命令 + MIDI音源</p>
 
     <div class="spec-box">
-      <strong style="color: #0f0;">コンセプト:</strong> 
-      命令数を最小限に絞り、学習・実装が容易なシンプルバーチャルマシン。
-      音源はMIDI対応により本格的なサウンド表現が可能。256x256解像度、256色パレット、MIDI 16ch対応。
+      <strong style="color: #0f0;">この仕様書について:</strong><br>
+      この文書は、XVM-16 Liteバーチャルマシンのエミュレーターを実装するために必要な全ての情報を含みます。
+      命令セットは25個に絞り、学習と実装を容易にしながら、実用的なゲーム開発が可能な設計です。
     </div>
 
-    <h2>1. 基本仕様</h2>
+    <h2>1. ハードウェア仕様</h2>
     
-    <h3>1.1 CPU</h3>
-    <ul>
-      <li><strong>ビット幅:</strong> 8bit CPU</li>
-      <li><strong>アドレス空間:</strong> 16bit (64KB)</li>
-      <li><strong>クロック:</strong> 4MHz</li>
-      <li><strong>リフレッシュレート:</strong> 60Hz</li>
-      <li><strong>サイクル/フレーム:</strong> 66,667 cycles</li>
-    </ul>
-
-    <h3>1.2 レジスタ（簡略化）</h3>
+    <h3>1.1 CPU仕様</h3>
     <table>
-      <tr><th>名前</th><th>サイズ</th><th>説明</th></tr>
-      <tr><td><code>A</code></td><td>8bit</td><td>アキュムレータ（演算結果）</td></tr>
-      <tr><td><code>X</code></td><td>8bit</td><td>Xインデックスレジスタ</td></tr>
-      <tr><td><code>Y</code></td><td>8bit</td><td>Yインデックスレジスタ</td></tr>
-      <tr><td><code>SP</code></td><td>16bit</td><td>スタックポインタ（初期値: 0x01FF）</td></tr>
-      <tr><td><code>PC</code></td><td>16bit</td><td>プログラムカウンタ（初期値: 0xE000）</td></tr>
-      <tr><td><code>F</code></td><td>8bit</td><td>フラグレジスタ</td></tr>
+      <tr><th>項目</th><th>仕様</th></tr>
+      <tr><td>ビット幅</td><td>8bit CPU</td></tr>
+      <tr><td>アドレス空間</td><td>16bit (64KB = 65,536バイト)</td></tr>
+      <tr><td>クロック速度</td><td>4MHz (4,000,000 Hz)</td></tr>
+      <tr><td>リフレッシュレート</td><td>60Hz (1秒間に60フレーム)</td></tr>
+      <tr><td>1フレームのサイクル数</td><td>66,667 cycles (4,000,000 ÷ 60)</td></tr>
+      <tr><td>エンディアン</td><td>リトルエンディアン（下位バイトが先）</td></tr>
     </table>
 
-    <div class="note">
-      <strong>簡略化ポイント:</strong> B, C, Dレジスタを削除し、A, X, Yの3つのみに集約。
-    </div>
-
-    <h4>フラグレジスタ (F)</h4>
+    <h3>1.2 レジスタ</h3>
     <table>
-      <tr><th>ビット</th><th>名前</th><th>説明</th></tr>
-      <tr><td>bit 0</td><td>Z (Zero)</td><td>演算結果が0</td></tr>
-      <tr><td>bit 1</td><td>C (Carry)</td><td>キャリー/ボロー発生</td></tr>
-      <tr><td>bit 2</td><td>N (Negative)</td><td>演算結果が負（bit7=1）</td></tr>
-      <tr><td>bit 3-7</td><td>-</td><td>未使用（常に0）</td></tr>
+      <tr><th>名前</th><th>サイズ</th><th>初期値</th><th>説明</th></tr>
+      <tr><td><code>A</code></td><td>8bit</td><td>0x00</td><td>アキュムレータ。算術演算の結果格納先</td></tr>
+      <tr><td><code>X</code></td><td>8bit</td><td>0x00</td><td>Xインデックスレジスタ。配列アクセス等に使用</td></tr>
+      <tr><td><code>Y</code></td><td>8bit</td><td>0x00</td><td>Yインデックスレジスタ。配列アクセス等に使用</td></tr>
+      <tr><td><code>SP</code></td><td>16bit</td><td>0x01FF</td><td>スタックポインタ。下位方向に成長（デクリメント）</td></tr>
+      <tr><td><code>PC</code></td><td>16bit</td><td>0xE000</td><td>プログラムカウンタ。次に実行する命令のアドレス</td></tr>
+      <tr><td><code>F</code></td><td>8bit</td><td>0x00</td><td>フラグレジスタ。演算結果の状態を保持</td></tr>
+    </table>
+
+    <h4>フラグレジスタ (F) の詳細</h4>
+    <table>
+      <tr><th>ビット</th><th>名前</th><th>説明</th><th>セット条件</th></tr>
+      <tr><td>bit 0</td><td>Z (Zero)</td><td>ゼロフラグ</td><td>演算結果が0x00のとき1</td></tr>
+      <tr><td>bit 1</td><td>C (Carry)</td><td>キャリーフラグ</td><td>加算で桁上がり、または減算で借入なしのとき1</td></tr>
+      <tr><td>bit 2</td><td>N (Negative)</td><td>ネガティブフラグ</td><td>演算結果のbit7が1のとき1（符号付き負数）</td></tr>
+      <tr><td>bit 3-7</td><td>-</td><td>未使用</td><td>常に0</td></tr>
     </table>
 
     <h3>1.3 メモリマップ</h3>
     <table>
-      <tr><th>アドレス</th><th>サイズ</th><th>説明</th></tr>
-      <tr><td>0x0000-0x00FF</td><td>256B</td><td>ゼロページRAM</td></tr>
-      <tr><td>0x0100-0x01FF</td><td>256B</td><td>スタック領域</td></tr>
-      <tr><td>0x0200-0x7FFF</td><td>31.5KB</td><td>汎用RAM</td></tr>
-      <tr><td>0x8000-0xFFFF</td><td>32KB</td><td><strong>VRAM（グラフィック専用）</strong></td></tr>
-      <tr><td>0xD000-0xD0FF</td><td>256B</td><td>パレットメモリ（256色）</td></tr>
-      <tr><td>0xD100-0xD1FF</td><td>256B</td><td>スプライト属性テーブル（64個）</td></tr>
-      <tr><td>0xD200-0xD2FF</td><td>256B</td><td>MIDIレジスタ</td></tr>
-      <tr><td>0xD300-0xD3FF</td><td>256B</td><td>I/Oレジスタ</td></tr>
-      <tr><td>0xE000-0xFFFF</td><td>8KB</td><td>ROM（プログラム領域）</td></tr>
+      <tr><th>開始</th><th>終了</th><th>サイズ</th><th>名称</th><th>用途</th><th>読み</th><th>書き</th></tr>
+      <tr><td>0x0000</td><td>0x00FF</td><td>256B</td><td>ゼロページRAM</td><td>高速アクセス変数領域</td><td>○</td><td>○</td></tr>
+      <tr><td>0x0100</td><td>0x01FF</td><td>256B</td><td>スタック</td><td>サブルーチン呼び出し用</td><td>○</td><td>○</td></tr>
+      <tr><td>0x0200</td><td>0x1FFF</td><td>7.5KB</td><td>汎用RAM</td><td>プログラムワーク領域</td><td>○</td><td>○</td></tr>
+      <tr><td>0x2000</td><td>0x5FFF</td><td>16KB</td><td>スプライトタイル</td><td>256個の16x16タイル</td><td>○</td><td>○</td></tr>
+      <tr><td>0x6000</td><td>0x7FFF</td><td>8KB</td><td>汎用RAM</td><td>追加ワーク領域</td><td>○</td><td>○</td></tr>
+      <tr><td>0x8000</td><td>0xFFFF</td><td>32KB</td><td>VRAM</td><td>256x256ピクセルデータ</td><td>○</td><td>○</td></tr>
+      <tr><td>0xD000</td><td>0xD0FF</td><td>256B</td><td>パレット</td><td>256色RGB332</td><td>○</td><td>○</td></tr>
+      <tr><td>0xD100</td><td>0xD1FF</td><td>256B</td><td>スプライト属性</td><td>64個x4バイト</td><td>○</td><td>○</td></tr>
+      <tr><td>0xD200</td><td>0xD2FF</td><td>256B</td><td>MIDI</td><td>MIDI制御レジスタ</td><td>○</td><td>○</td></tr>
+      <tr><td>0xD300</td><td>0xD3FF</td><td>256B</td><td>I/O</td><td>入力・その他</td><td>○</td><td>△</td></tr>
+      <tr><td>0xE000</td><td>0xFFFF</td><td>8KB</td><td>ROM</td><td>プログラムコード</td><td>○</td><td>×</td></tr>
     </table>
-
-    <h2>2. 命令セット（大幅削減版）</h2>
 
     <div class="important">
-      <strong>削減方針:</strong> 70以上あった命令を<strong>25命令</strong>に削減。
-      基本的な演算・転送・分岐のみに絞り、実装と学習を容易に。
+      <strong>メモリ重複について:</strong><br>
+      0xD000-0xDFFF領域はVRAM空間(0x8000-0xFFFF)と物理的に重複します。<br>
+      - 読み取り時: I/Oレジスタ/パレット/スプライト属性の値を返す<br>
+      - 書き込み時: I/Oレジスタ/パレット/スプライト属性とVRAMの両方に書き込む
     </div>
 
-    <h3>2.1 データ転送（6命令）</h3>
+    <h2>2. 命令セット（全25命令）</h2>
+
+    <div class="spec-box">
+      <strong>命令フォーマット:</strong><br>
+      各命令は1～3バイトで構成されます。<br>
+      - オペコード（1バイト）: 命令の種類<br>
+      - オペランド（0～2バイト）: 即値データまたはアドレス<br>
+      リトルエンディアン: 16bitアドレスは下位バイト→上位バイトの順
+    </div>
+
+    <h3>2.1 データ転送命令（6命令）</h3>
     <table>
-      <tr><th>命令</th><th>オペランド</th><th>説明</th><th>サイクル</th></tr>
-      <tr><td><code>LDA</code></td><td>imm/abs/zpg/idx</td><td>A ← メモリ</td><td>2-4</td></tr>
-      <tr><td><code>LDX</code></td><td>imm/abs/zpg</td><td>X ← メモリ</td><td>2-4</td></tr>
-      <tr><td><code>LDY</code></td><td>imm/abs/zpg</td><td>Y ← メモリ</td><td>2-4</td></tr>
-      <tr><td><code>STA</code></td><td>abs/zpg/idx</td><td>メモリ ← A</td><td>3-4</td></tr>
-      <tr><td><code>STX</code></td><td>abs/zpg</td><td>メモリ ← X</td><td>3-4</td></tr>
-      <tr><td><code>STY</code></td><td>abs/zpg</td><td>メモリ ← Y</td><td>3-4</td></tr>
+      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>フラグ</th></tr>
+      <tr><td>LDA #nn</td><td>0xA9</td><td>2</td><td>2</td><td>A ← nn（即値）</td><td>Z,N</td></tr>
+      <tr><td>LDA addr</td><td>0xAD</td><td>3</td><td>4</td><td>A ← [addr]（絶対）</td><td>Z,N</td></tr>
+      <tr><td>LDA zp</td><td>0xA5</td><td>2</td><td>3</td><td>A ← [0x00zp]（ゼロページ）</td><td>Z,N</td></tr>
+      <tr><td>LDA addr,X</td><td>0xBD</td><td>3</td><td>4</td><td>A ← [addr+X]（インデックス）</td><td>Z,N</td></tr>
+      <tr><td>LDX #nn</td><td>0xA2</td><td>2</td><td>2</td><td>X ← nn（即値）</td><td>Z,N</td></tr>
+      <tr><td>LDX addr</td><td>0xAE</td><td>3</td><td>4</td><td>X ← [addr]（絶対）</td><td>Z,N</td></tr>
+      <tr><td>LDX zp</td><td>0xA6</td><td>2</td><td>3</td><td>X ← [0x00zp]（ゼロページ）</td><td>Z,N</td></tr>
+      <tr><td>LDY #nn</td><td>0xA0</td><td>2</td><td>2</td><td>Y ← nn（即値）</td><td>Z,N</td></tr>
+      <tr><td>LDY addr</td><td>0xAC</td><td>3</td><td>4</td><td>Y ← [addr]（絶対）</td><td>Z,N</td></tr>
+      <tr><td>LDY zp</td><td>0xA4</td><td>2</td><td>3</td><td>Y ← [0x00zp]（ゼロページ）</td><td>Z,N</td></tr>
+      <tr><td>STA addr</td><td>0x8D</td><td>3</td><td>4</td><td>[addr] ← A（絶対）</td><td>-</td></tr>
+      <tr><td>STA zp</td><td>0x85</td><td>2</td><td>3</td><td>[0x00zp] ← A（ゼロページ）</td><td>-</td></tr>
+      <tr><td>STA addr,X</td><td>0x9D</td><td>3</td><td>5</td><td>[addr+X] ← A（インデックス）</td><td>-</td></tr>
+      <tr><td>STX addr</td><td>0x8E</td><td>3</td><td>4</td><td>[addr] ← X（絶対）</td><td>-</td></tr>
+      <tr><td>STX zp</td><td>0x86</td><td>2</td><td>3</td><td>[0x00zp] ← X（ゼロページ）</td><td>-</td></tr>
+      <tr><td>STY addr</td><td>0x8C</td><td>3</td><td>4</td><td>[addr] ← Y（絶対）</td><td>-</td></tr>
+      <tr><td>STY zp</td><td>0x84</td><td>2</td><td>3</td><td>[0x00zp] ← Y（ゼロページ）</td><td>-</td></tr>
     </table>
 
-    <h3>2.2 演算（5命令）</h3>
+    <div class="note">
+      <strong>実装上の注意:</strong><br>
+      - zpは8bitアドレス。実際のアドレスは0x0000～0x00FFの範囲<br>
+      - addrは16bitアドレス。リトルエンディアンで格納（下位→上位）<br>
+      - インデックスモードでのオーバーフロー: (addr + X) & 0xFFFF
+    </div>
+
+    <h3>2.2 演算命令（5命令）</h3>
     <table>
-      <tr><th>命令</th><th>オペランド</th><th>説明</th><th>フラグ</th></tr>
-      <tr><td><code>ADD</code></td><td>imm/abs/zpg</td><td>A ← A + メモリ</td><td>Z,C,N</td></tr>
-      <tr><td><code>SUB</code></td><td>imm/abs/zpg</td><td>A ← A - メモリ</td><td>Z,C,N</td></tr>
-      <tr><td><code>AND</code></td><td>imm/abs/zpg</td><td>A ← A & メモリ</td><td>Z,N</td></tr>
-      <tr><td><code>ORA</code></td><td>imm/abs/zpg</td><td>A ← A | メモリ</td><td>Z,N</td></tr>
-      <tr><td><code>CMP</code></td><td>imm/abs/zpg</td><td>A - メモリ（比較のみ）</td><td>Z,C,N</td></tr>
+      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>フラグ</th></tr>
+      <tr><td>ADC #nn</td><td>0x69</td><td>2</td><td>2</td><td>A ← A + nn + C</td><td>Z,C,N</td></tr>
+      <tr><td>ADC addr</td><td>0x6D</td><td>3</td><td>4</td><td>A ← A + [addr] + C</td><td>Z,C,N</td></tr>
+      <tr><td>ADC zp</td><td>0x65</td><td>2</td><td>3</td><td>A ← A + [zp] + C</td><td>Z,C,N</td></tr>
+      <tr><td>SBC #nn</td><td>0xE9</td><td>2</td><td>2</td><td>A ← A - nn - (1-C)</td><td>Z,C,N</td></tr>
+      <tr><td>SBC addr</td><td>0xED</td><td>3</td><td>4</td><td>A ← A - [addr] - (1-C)</td><td>Z,C,N</td></tr>
+      <tr><td>SBC zp</td><td>0xE5</td><td>2</td><td>3</td><td>A ← A - [zp] - (1-C)</td><td>Z,C,N</td></tr>
+      <tr><td>AND #nn</td><td>0x29</td><td>2</td><td>2</td><td>A ← A & nn</td><td>Z,N</td></tr>
+      <tr><td>AND addr</td><td>0x2D</td><td>3</td><td>4</td><td>A ← A & [addr]</td><td>Z,N</td></tr>
+      <tr><td>AND zp</td><td>0x25</td><td>2</td><td>3</td><td>A ← A & [zp]</td><td>Z,N</td></tr>
+      <tr><td>ORA #nn</td><td>0x09</td><td>2</td><td>2</td><td>A ← A | nn</td><td>Z,N</td></tr>
+      <tr><td>ORA addr</td><td>0x0D</td><td>3</td><td>4</td><td>A ← A | [addr]</td><td>Z,N</td></tr>
+      <tr><td>ORA zp</td><td>0x05</td><td>2</td><td>3</td><td>A ← A | [zp]</td><td>Z,N</td></tr>
+      <tr><td>CMP #nn</td><td>0xC9</td><td>2</td><td>2</td><td>A - nn（比較、結果は破棄）</td><td>Z,C,N</td></tr>
+      <tr><td>CMP addr</td><td>0xCD</td><td>3</td><td>4</td><td>A - [addr]（比較）</td><td>Z,C,N</td></tr>
+      <tr><td>CMP zp</td><td>0xC5</td><td>2</td><td>3</td><td>A - [zp]（比較）</td><td>Z,C,N</td></tr>
     </table>
+
+    <div class="important">
+      <strong>ADC/SBC動作の詳細:</strong><br>
+      <strong>ADC:</strong> result = A + operand + C; A = result & 0xFF; C = (result > 255) ? 1 : 0<br>
+      <strong>SBC:</strong> result = A - operand - (1 - C); A = result & 0xFF; C = (result >= 0) ? 1 : 0<br>
+      <strong>CMP:</strong> result = A - operand; C = (A >= operand) ? 1 : 0（Aは変更しない）
+    </div>
 
     <h3>2.3 インクリメント/デクリメント（4命令）</h3>
     <table>
-      <tr><th>命令</th><th>オペランド</th><th>説明</th></tr>
-      <tr><td><code>INC</code></td><td>abs/zpg</td><td>メモリ++</td></tr>
-      <tr><td><code>DEC</code></td><td>abs/zpg</td><td>メモリ--</td></tr>
-      <tr><td><code>INX</code></td><td>-</td><td>X++</td></tr>
-      <tr><td><code>INY</code></td><td>-</td><td>Y++</td></tr>
+      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>フラグ</th></tr>
+      <tr><td>INC addr</td><td>0xEE</td><td>3</td><td>6</td><td>[addr] ← [addr] + 1</td><td>Z,N</td></tr>
+      <tr><td>INC zp</td><td>0xE6</td><td>2</td><td>5</td><td>[zp] ← [zp] + 1</td><td>Z,N</td></tr>
+      <tr><td>DEC addr</td><td>0xCE</td><td>3</td><td>6</td><td>[addr] ← [addr] - 1</td><td>Z,N</td></tr>
+      <tr><td>DEC zp</td><td>0xC6</td><td>2</td><td>5</td><td>[zp] ← [zp] - 1</td><td>Z,N</td></tr>
+      <tr><td>INX</td><td>0xE8</td><td>1</td><td>2</td><td>X ← X + 1</td><td>Z,N</td></tr>
+      <tr><td>INY</td><td>0xC8</td><td>1</td><td>2</td><td>Y ← Y + 1</td><td>Z,N</td></tr>
+      <tr><td>DEX</td><td>0xCA</td><td>1</td><td>2</td><td>X ← X - 1</td><td>Z,N</td></tr>
+      <tr><td>DEY</td><td>0x88</td><td>1</td><td>2</td><td>Y ← Y - 1</td><td>Z,N</td></tr>
     </table>
 
-    <h3>2.4 分岐（4命令）</h3>
+    <h3>2.4 分岐命令（4命令）</h3>
     <table>
-      <tr><th>命令</th><th>オペランド</th><th>説明</th></tr>
-      <tr><td><code>JMP</code></td><td>abs</td><td>無条件ジャンプ</td></tr>
-      <tr><td><code>BEQ</code></td><td>rel</td><td>Z=1なら分岐</td></tr>
-      <tr><td><code>BNE</code></td><td>rel</td><td>Z=0なら分岐</td></tr>
-      <tr><td><code>BCS</code></td><td>rel</td><td>C=1なら分岐</td></tr>
+      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>条件</th></tr>
+      <tr><td>JMP addr</td><td>0x4C</td><td>3</td><td>3</td><td>PC ← addr（無条件ジャンプ）</td><td>-</td></tr>
+      <tr><td>BEQ rel</td><td>0xF0</td><td>2</td><td>2/3</td><td>Z=1ならPC ← PC + rel</td><td>Z=1</td></tr>
+      <tr><td>BNE rel</td><td>0xD0</td><td>2</td><td>2/3</td><td>Z=0ならPC ← PC + rel</td><td>Z=0</td></tr>
+      <tr><td>BCS rel</td><td>0xB0</td><td>2</td><td>2/3</td><td>C=1ならPC ← PC + rel</td><td>C=1</td></tr>
+      <tr><td>BCC rel</td><td>0x90</td><td>2</td><td>2/3</td><td>C=0ならPC ← PC + rel</td><td>C=0</td></tr>
     </table>
+
+    <div class="note">
+      <strong>相対分岐の詳細:</strong><br>
+      - relは符号付き8bit (-128～+127)<br>
+      - 負の値の場合: rel > 127なら rel - 256として解釈<br>
+      - 分岐先 = PC + rel（PCは既に次の命令を指している）<br>
+      - サイクル数: 分岐しない=2, 分岐する=3
+    </div>
 
     <h3>2.5 サブルーチン（2命令）</h3>
     <table>
-      <tr><th>命令</th><th>オペランド</th><th>説明</th></tr>
-      <tr><td><code>JSR</code></td><td>abs</td><td>サブルーチン呼び出し</td></tr>
-      <tr><td><code>RTS</code></td><td>-</td><td>サブルーチンから戻る</td></tr>
+      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th></tr>
+      <tr><td>JSR addr</td><td>0x20</td><td>3</td><td>6</td><td>スタックにPC-1をプッシュしてaddrへジャンプ</td></tr>
+      <tr><td>RTS</td><td>0x60</td><td>1</td><td>6</td><td>スタックからアドレスをポップしてPC+1へ復帰</td></tr>
     </table>
+
+    <div class="important">
+      <strong>JSR/RTS動作の詳細:</strong><br>
+      <strong>JSR:</strong><br>
+      1. return_addr = PC + 2（JSR命令の次の次）<br>
+      2. [SP] = (return_addr - 1) >> 8（上位バイト）; SP--<br>
+      3. [SP] = (return_addr - 1) & 0xFF（下位バイト）; SP--<br>
+      4. PC = addr<br>
+      <strong>RTS:</strong><br>
+      1. SP++; low = [SP]<br>
+      2. SP++; high = [SP]<br>
+      3. PC = (high << 8 | low) + 1
+    </div>
 
     <h3>2.6 スタック（2命令）</h3>
     <table>
-      <tr><th>命令</th><th>オペランド</th><th>説明</th></tr>
-      <tr><td><code>PHA</code></td><td>-</td><td>A をスタックにプッシュ</td></tr>
-      <tr><td><code>PLA</code></td><td>-</td><td>A をスタックからポップ</td></tr>
+      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th></tr>
+      <tr><td>PHA</td><td>0x48</td><td>1</td><td>3</td><td>[SP] ← A; SP--</td></tr>
+      <tr><td>PLA</td><td>0x68</td><td>1</td><td>4</td><td>SP++; A ← [SP]</td></tr>
     </table>
 
     <h3>2.7 その他（2命令）</h3>
     <table>
-      <tr><th>命令</th><th>オペランド</th><th>説明</th></tr>
-      <tr><td><code>NOP</code></td><td>-</td><td>何もしない</td></tr>
-      <tr><td><code>HLT</code></td><td>-</td><td>実行停止</td></tr>
-    </table>
-
-    <div class="note">
-      <strong>合計25命令:</strong> 転送6 + 演算5 + Inc/Dec4 + 分岐4 + サブルーチン2 + スタック2 + その他2
-    </div>
-
-    <h3>2.8 アドレッシングモード</h3>
-    <table>
-      <tr><th>略称</th><th>名前</th><th>書式例</th><th>説明</th></tr>
-      <tr><td>imm</td><td>即値</td><td><code>LDA #$42</code></td><td>定数を直接指定</td></tr>
-      <tr><td>abs</td><td>絶対</td><td><code>LDA $1234</code></td><td>16bitアドレス</td></tr>
-      <tr><td>zpg</td><td>ゼロページ</td><td><code>LDA $42</code></td><td>0x00xx（高速）</td></tr>
-      <tr><td>idx</td><td>インデックス</td><td><code>LDA $1234,X</code></td><td>アドレス+X</td></tr>
-      <tr><td>rel</td><td>相対</td><td><code>BEQ +5</code></td><td>PC相対(-128~+127)</td></tr>
+      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th></tr>
+      <tr><td>NOP</td><td>0xEA</td><td>1</td><td>2</td><td>何もしない</td></tr>
+      <tr><td>BRK</td><td>0x00</td><td>1</td><td>7</td><td>実行停止（ブレーク）</td></tr>
     </table>
 
     <h2>3. グラフィック仕様</h2>
 
     <h3>3.1 ディスプレイ</h3>
-    <ul>
-      <li><strong>解像度:</strong> 256x256 ピクセル</li>
-      <li><strong>色数:</strong> 256色（8bit インデックスカラー）</li>
-      <li><strong>VRAM容量:</strong> 65,536 bytes (256x256)</li>
-      <li><strong>スプライト:</strong> 64個（16x16ピクセル）</li>
-      <li><strong>レイヤー:</strong> BG + スプライト（2レイヤー）</li>
-    </ul>
+    <table>
+      <tr><th>項目</th><th>仕様</th></tr>
+      <tr><td>解像度</td><td>256x256 ピクセル</td></tr>
+      <tr><td>色数</td><td>256色（8bitインデックスカラー）</td></tr>
+      <tr><td>VRAMサイズ</td><td>65,536 bytes (256×256)</td></tr>
+      <tr><td>VRAMアドレス</td><td>0x8000-0xFFFF</td></tr>
+      <tr><td>ピクセルアクセス式</td><td>VRAM[y * 256 + x] = 色番号 (0-255)</td></tr>
+    </table>
 
     <h3>3.2 カラーパレット</h3>
-    <p><strong>アドレス:</strong> 0xD000-0xD0FF (256色)</p>
-    <p><strong>形式:</strong> RGB332（8bit）</p>
-    <pre>RGB332形式:
-RRR GGG BB
-|||  |  ||
-|||  |  ++-- 青 (0-3)  ×85 → 0-255
-|||  +------ 緑 (0-7)  ×36 → 0-252
-+++--------- 赤 (0-7)  ×36 → 0-252</pre>
-
-    <h3>3.3 スプライト仕様</h3>
-    <p><strong>スプライト数:</strong> 最大64個</p>
-    <p><strong>サイズ:</strong> 16x16ピクセル（固定）</p>
-    <p><strong>属性テーブル:</strong> 0xD100-0xD1FF (各スプライト4バイト)</p>
-
-    <h4>スプライト属性 (4バイト/スプライト)</h4>
     <table>
-      <tr><th>オフセット</th><th>内容</th></tr>
-      <tr><td>+0</td><td>X座標 (0-255)</td></tr>
-      <tr><td>+1</td><td>Y座標 (0-255)</td></tr>
-      <tr><td>+2</td><td>タイル番号 (0-255)</td></tr>
-      <tr><td>+3</td><td>フラグ（bit0=有効, bit1=左右反転, bit2=上下反転）</td></tr>
+      <tr><th>項目</th><th>仕様</th></tr>
+      <tr><td>アドレス</td><td>0xD000-0xD0FF</td></tr>
+      <tr><td>形式</td><td>RGB332（8bit）</td></tr>
+      <tr><td>ビット配置</td><td>RRRGGGBB</td></tr>
     </table>
+
+    <h4>RGB332からRGB888への変換</h4>
+    <pre>uint8_t rgb332 = palette[color_index];
+uint8_t r = ((rgb332 >> 5) & 0x07) * 36;  // 0-7 → 0-252
+uint8_t g = ((rgb332 >> 2) & 0x07) * 36;  // 0-7 → 0-252
+uint8_t b = (rgb332 & 0x03) * 85;         // 0-3 → 0-255</pre>
+
+    <h4>デフォルトパレット（0-15）</h4>
+    <pre>const uint8_t default_palette[16] = {
+  0x00, // 0:  黒
+  0xFF, // 1:  白
+  0xE0, // 2:  赤
+  0x1C, // 3:  緑
+  0x03, // 4:  青
+  0xFC, // 5:  黄
+  0xE3, // 6:  マゼンタ
+  0x1F, // 7:  シアン
+  0x92, // 8:  灰色
+  0x6D, // 9:  茶
+  0xB8, // 10: オレンジ
+  0x9F, // 11: ライム
+  0x13, // 12: 水色
+  0xA3, // 13: 紫
+  0xFD, // 14: ピンク
+  0xB6  // 15: ベージュ
+};</pre>
+
+    <h3>3.3 スプライト</h3>
+    <table>
+      <tr><th>項目</th><th>仕様</th></tr>
+      <tr><td>スプライト数</td><td>64個</td></tr>
+      <tr><td>スプライトサイズ</td><td>16x16ピクセル（固定）</td></tr>
+      <tr><td>属性テーブル</td><td>0xD100-0xD1FF（4バイト/スプライト）</td></tr>
+      <tr><td>タイルデータ</td><td>0x2000-0x5FFF（256タイル）</td></tr>
+      <tr><td>タイルサイズ</td><td>256バイト/タイル（16x16）</td></tr>
+    </table>
+
+    <h4>スプライト属性（4バイト構造）</h4>
+    <table>
+      <tr><th>オフセット</th><th>名前</th><th>説明</th></tr>
+      <tr><td>+0</td><td>X座標</td><td>0-255（画面上のX位置）</td></tr>
+      <tr><td>+1</td><td>Y座標</td><td>0-255（画面上のY位置）</td></tr>
+      <tr><td>+2</td><td>タイル番号</td><td>0-255（表示するタイルのインデックス）</td></tr>
+      <tr><td>+3</td><td>フラグ</td><td>bit0=有効, bit1=X反転, bit2=Y反転</td></tr>
+    </table>
+
+    <h4>スプライト描画アルゴリズム</h4>
+    <pre>for (int sprite_id = 0; sprite_id < 64; sprite_id++) {
+  uint8_t x = sprite_attr[sprite_id * 4 + 0];
+  uint8_t y = sprite_attr[sprite_id * 4 + 1];
+  uint8_t tile = sprite_attr[sprite_id * 4 + 2];
+  uint8_t flags = sprite_attr[sprite_id * 4 + 3];
+  
+  if (!(flags & 0x01)) continue; // 無効なら描画しない
+  
+  bool flip_x = flags & 0x02;
+  bool flip_y = flags & 0x04;
+  
+  uint8_t* tile_data = &sprite_tiles[tile * 256];
+  
+  for (int sy = 0; sy < 16; sy++) {
+    for (int sx = 0; sx < 16; sx++) {
+      uint8_t color_idx = tile_data[sy * 16 + sx];
+      if (color_idx == 0) continue; // 透明色
+      
+      int px = x + (flip_x ? (15 - sx) : sx);
+      int py = y + (flip_y ? (15 - sy) : sy);
+      
+      if (px >= 0 && px < 256 && py >= 0 && py < 256) {
+        framebuffer[py * 256 + px] = palette[color_idx];
+      }
+    }
+  }
+}</pre>
 
     <h2>4. MIDI音源仕様</h2>
 
-    <div class="spec-box">
-      <strong style="color: #0f0;">MIDI対応の利点:</strong>
-      <ul style="margin: 10px 0;">
-        <li>標準MIDI音源（GM/GS/XG）対応で多彩な音色</li>
-        <li>16チャンネル同時発音可能</li>
-        <li>ポルタメント、ピッチベンド、モジュレーション対応</li>
-        <li>エフェクト（リバーブ、コーラス）も利用可能</li>
-      </ul>
+    <h3>4.1 MIDIレジスタマップ</h3>
+    <table>
+      <tr><th>アドレス</th><th>名前</th><th>R/W</th><th>説明</th></tr>
+      <tr><td>0xD200</td><td>MIDI_CMD</td><td>W</td><td>MIDIステータスバイト（0x80-0xFF）</td></tr>
+      <tr><td>0xD201</td><td>MIDI_DATA1</td><td>W</td><td>データバイト1（0x00-0x7F）</td></tr>
+      <tr><td>0xD202</td><td>MIDI_DATA2</td><td>W</td><td>データバイト2（0x00-0x7F）</td></tr>
+      <tr><td>0xD203</td><td>MIDI_SEND</td><td>W</td><td>書き込みでMIDIメッセージ送信</td></tr>
+      <tr><td>0xD204-0xD213</td><td>CH_PROGRAM[0-15]</td><td>W</td><td>チャンネル音色（0-127）</td></tr>
+      <tr><td>0xD214-0xD223</td><td>CH_VOLUME[0-15]</td><td>W</td><td>チャンネル音量（0-127）</td></tr>
+      <tr><td>0xD224-0xD233</td><td>CH_PAN[0-15]</td><td>W</td><td>チャンネルパン（0-127, 64=中央）</td></tr>
+    </table>
+
+    <h3>4.2 MIDIメッセージフォーマット</h3>
+    <table>
+      <tr><th>メッセージ</th><th>ステータス</th><th>データ1</th><th>データ2</th><th>説明</th></tr>
+      <tr><td>Note Off</td><td>0x80-0x8F</td><td>ノート番号</td><td>ベロシティ</td><td>音を止める</td></tr>
+      <tr><td>Note On</td><td>0x90-0x9F</td><td>ノート番号</td><td>ベロシティ</td><td>音を鳴らす</td></tr>
+      <tr><td>Poly Aftertouch</td><td>0xA0-0xAF</td><td>ノート番号</td><td>圧力</td><td>鍵盤圧力</td></tr>
+      <tr><td>Control Change</td><td>0xB0-0xBF</td><td>CC番号</td><td>値</td><td>コントロール変更</td></tr>
+      <tr><td>Program Change</td><td>0xC0-0xCF</td><td>プログラム番号</td><td>-</td><td>音色変更</td></tr>
+      <tr><td>Channel Aftertouch</td><td>0xD0-0xDF</td><td>圧力</td><td>-</td><td>チャンネル圧力</td></tr>
+      <tr><td>Pitch Bend</td><td>0xE0-0xEF</td><td>LSB</td><td>MSB</td><td>ピッチベンド</td></tr>
+    </table>
+
+    <div class="note">
+      <strong>チャンネル番号の計算:</strong><br>
+      ステータスバイトの下位4bitがチャンネル番号（0-15）<br>
+      例: 0x90 = チャンネル1のNote On, 0x9F = チャンネル16のNote On
     </div>
 
-    <h3>4.1 MIDIレジスタマップ</h3>
-    <p><strong>ベースアドレス:</strong> 0xD200-0xD2FF</p>
+    <h3>4.3 MIDI送信手順</h3>
+    <pre>// Note On: チャンネル1でC4(60)を音量100で発音
+memory[0xD200] = 0x90;  // Note On, Ch1
+memory[0xD201] = 60;    // Note number
+memory[0xD202] = 100;   // Velocity
+memory[0xD203] = 0x00;  // Trigger send
 
+// Note Off: チャンネル1のC4(60)を停止
+memory[0xD200] = 0x80;  // Note Off, Ch1
+memory[0xD201] = 60;    // Note number
+memory[0xD202] = 64;    // Release velocity
+memory[0xD203] = 0x00;  // Trigger send
+
+// Program Change: チャンネル1を音色1（ピアノ）に変更
+memory[0xD204] = 1;     // 直接書き込み
+// または
+memory[0xD200] = 0xC0;  // Program Change, Ch1
+memory[0xD201] = 1;     // Program number
+memory[0xD203] = 0x00;  // Trigger send</pre>
+
+    <h3>4.4 MIDIノート番号表</h3>
     <table>
-      <tr><th>アドレス</th><th>内容</th><th>値の範囲</th></tr>
-      <tr><td>0xD200</td><td>MIDIコマンド送信</td><td>0x00-0xFF</td></tr>
-      <tr><td>0xD201</td><td>データバイト1</td><td>0x00-0xFF</td></tr>
-      <tr><td>0xD202</td><td>データバイト2</td><td>0x00-0xFF</td></tr>
-      <tr><td>0xD203</td><td>実行トリガー（書き込みで送信）</td><td>任意</td></tr>
-      <tr><td>0xD204-0xD213</td><td>チャンネル1-16 音色番号</td><td>0-127（GM音色）</td></tr>
-      <tr><td>0xD214-0xD223</td><td>チャンネル1-16 音量</td><td>0-127</td></tr>
-      <tr><td>0xD224-0xD233</td><td>チャンネル1-16 パン</td><td>0-127（64=中央）</td></tr>
+      <tr><th>音名</th><th>オクターブ2</th><th>オクターブ3</th><th>オクターブ4</th><th>オクターブ5</th><th>周波数(Hz)</th></tr>
+      <tr><td>C</td><td>36</td><td>48</td><td>60</td><td>72</td><td>261.63</td></tr>
+      <tr><td>C#/D♭</td><td>37</td><td>49</td><td>61</td><td>73</td><td>277.18</td></tr>
+      <tr><td>D</td><td>38</td><td>50</td><td>62</td><td>74</td><td>293.66</td></tr>
+      <tr><td>D#/E♭</td><td>39</td><td>51</td><td>63</td><td>75</td><td>311.13</td></tr>
+      <tr><td>E</td><td>40</td><td>52</td><td>64</td><td>76</td><td>329.63</td></tr>
+      <tr><td>F</td><td>41</td><td>53</td><td>65</td><td>77</td><td>349.23</td></tr>
+      <tr><td>F#/G♭</td><td>42</td><td>54</td><td>66</td><td>78</td><td>369.99</td></tr>
+      <tr><td>G</td><td>43</td><td>55</td><td>67</td><td>79</td><td>392.00</td></tr>
+      <tr><td>G#/A♭</td><td>44</td><td>56</td><td>68</td><td>80</td><td>415.30</td></tr>
+      <tr><td>A</td><td>45</td><td>57</td><td>69</td><td>81</td><td>440.00</td></tr>
+      <tr><td>A#/B♭</td><td>46</td><td>58</td><td>70</td><td>82</td><td>466.16</td></tr>
+      <tr><td>B</td><td>47</td><td>59</td><td>71</td><td>83</td><td>493.88</td></tr>
     </table>
 
-    <h3>4.2 基本的なMIDI操作</h3>
-
-    <h4>音を鳴らす（Note On）</h4>
-    <pre>; チャンネル1、ノート60(C4)、ベロシティ100で発音
-LDA #$90        ; Note On (ch1 = 0x90)
-STA $D200
-LDA #60         ; ノート番号(C4)
-STA $D201
-LDA #100        ; ベロシティ(音量)
-STA $D202
-LDA #$00        ; トリガー
-STA $D203       ; 送信実行</pre>
-
-    <h4>音を止める（Note Off）</h4>
-    <pre>; チャンネル1、ノート60を停止
-LDA #$80        ; Note Off (ch1 = 0x80)
-STA $D200
-LDA #60         ; ノート番号
-STA $D201
-LDA #64         ; リリースベロシティ
-STA $D202
-LDA #$00
-STA $D203</pre>
-
-    <h4>音色変更（Program Change）</h4>
-    <pre>; チャンネル1を音色1（ピアノ）に変更
-LDA #1
-STA $D204       ; ch1音色レジスタに直接書き込み</pre>
-
-    <h3>4.3 MIDIノート番号表</h3>
-    <table>
-      <tr><th>音名</th><th>オクターブ3</th><th>オクターブ4</th><th>オクターブ5</th></tr>
-      <tr><td>C</td><td>48</td><td>60</td><td>72</td></tr>
-      <tr><td>C#</td><td>49</td><td>61</td><td>73</td></tr>
-      <tr><td>D</td><td>50</td><td>62</td><td>74</td></tr>
-      <tr><td>D#</td><td>51</td><td>63</td><td>75</td></tr>
-      <tr><td>E</td><td>52</td><td>64</td><td>76</td></tr>
-      <tr><td>F</td><td>53</td><td>65</td><td>77</td></tr>
-      <tr><td>F#</td><td>54</td><td>66</td><td>78</td></tr>
-      <tr><td>G</td><td>55</td><td>67</td><td>79</td></tr>
-      <tr><td>G#</td><td>56</td><td>68</td><td>80</td></tr>
-      <tr><td>A</td><td>57</td><td>69</td><td>81</td></tr>
-      <tr><td>A#</td><td>58</td><td>70</td><td>82</td></tr>
-      <tr><td>B</td><td>59</td><td>71</td><td>83</td></tr>
-    </table>
-
-    <h3>4.4 General MIDI音色表（抜粋）</h3>
+    <h3>4.5 General MIDI音色表（抜粋）</h3>
     <table>
       <tr><th>番号</th><th>音色名</th><th>番号</th><th>音色名</th></tr>
-      <tr><td>0</td><td>ピアノ</td><td>40</td><td>バイオリン</td></tr>
-      <tr><td>1</td><td>ブライトピアノ</td><td>56</td><td>トランペット</td></tr>
-      <tr><td>4</td><td>エレピ</td><td>65</td><td>ソプラノサックス</td></tr>
-      <tr><td>16</td><td>オルガン</td><td>73</td><td>フルート</td></tr>
-      <tr><td>24</td><td>ギター</td><td>80</td><td>シンセリード</td></tr>
-      <tr><td>32</td><td>ベース</td><td>127</td><td>ガンショット（効果音）</td></tr>
+      <tr><td>0</td><td>Acoustic Grand Piano</td><td>32</td><td>Acoustic Bass</td></tr>
+      <tr><td>1</td><td>Bright Acoustic Piano</td><td>33</td><td>Electric Bass (finger)</td></tr>
+      <tr><td>4</td><td>Electric Piano 1</td><td>40</td><td>Violin</td></tr>
+      <tr><td>5</td><td>Electric Piano 2</td><td>56</td><td>Trumpet</td></tr>
+      <tr><td>16</td><td>Drawbar Organ</td><td>65</td><td>Soprano Sax</td></tr>
+      <tr><td>24</td><td>Acoustic Guitar (nylon)</td><td>73</td><td>Flute</td></tr>
+      <tr><td>25</td><td>Acoustic Guitar (steel)</td><td>80</td><td>Lead 1 (square)</td></tr>
     </table>
-
-    <div class="info">
-      <strong>チャンネル10の特殊用途:</strong> MIDI規格では、チャンネル10はドラム専用です。
-      ノート番号が各パーカッション楽器に対応（例: 36=バスドラム, 38=スネア, 42=ハイハット）
-    </div>
 
     <h2>5. 入力仕様</h2>
 
-    <h3>5.1 コントローラー</h3>
-    <p><strong>I/Oアドレス:</strong> 0xD300-0xD301</p>
-
+    <h3>5.1 コントローラー入力</h3>
     <table>
-      <tr><th>アドレス</th><th>内容</th></tr>
-      <tr><td>0xD300</td><td>コントローラー1 状態</td></tr>
-      <tr><td>0xD301</td><td>コントローラー2 状態</td></tr>
+      <tr><th>アドレス</th><th>名前</th><th>R/W</th><th>説明</th></tr>
+      <tr><td>0xD300</td><td>CONTROLLER1</td><td>R</td><td>コントローラー1のボタン状態</td></tr>
+      <tr><td>0xD301</td><td>CONTROLLER2</td><td>R</td><td>コントローラー2のボタン状態</td></tr>
     </table>
 
-    <h4>ボタン配置（8bit）</h4>
+    <h4>ボタンビット配置</h4>
     <table>
-      <tr><th>ビット</th><th>ボタン</th></tr>
-      <tr><td>bit 0</td><td>上</td></tr>
-      <tr><td>bit 1</td><td>下</td></tr>
-      <tr><td>bit 2</td><td>左</td></tr>
-      <tr><td>bit 3</td><td>右</td></tr>
-      <tr><td>bit 4</td><td>Aボタン</td></tr>
-      <tr><td>bit 5</td><td>Bボタン</td></tr>
-      <tr><td>bit 6</td><td>START</td></tr>
-      <tr><td>bit 7</td><td>SELECT</td></tr>
+      <tr><th>ビット</th><th>ボタン</th><th>値</th></tr>
+      <tr><td>bit 0</td><td>上</td><td>0x01</td></tr>
+      <tr><td>bit 1</td><td>下</td><td>0x02</td></tr>
+      <tr><td>bit 2</td><td>左</td><td>0x04</td></tr>
+      <tr><td>bit 3</td><td>右</td><td>0x08</td></tr>
+      <tr><td>bit 4</td><td>A</td><td>0x10</td></tr>
+      <tr><td>bit 5</td><td>B</td><td>0x20</td></tr>
+      <tr><td>bit 6</td><td>START</td><td>0x40</td></tr>
+      <tr><td>bit 7</td><td>SELECT</td><td>0x80</td></tr>
     </table>
 
-    <h3>5.2 その他I/Oレジスタ</h3>
+    <h4>ボタン判定例</h4>
+    <pre>uint8_t input = memory[0xD300];
+bool up_pressed = input & 0x01;
+bool a_pressed = input & 0x10;
+bool start_pressed = input & 0x40;</pre>
+
+    <h3>5.2 その他のI/Oレジスタ</h3>
     <table>
-      <tr><th>アドレス</th><th>内容</th><th>読み/書き</th></tr>
-      <tr><td>0xD302</td><td>乱数（0-255）</td><td>読み取り専用</td></tr>
-      <tr><td>0xD303</td><td>フレームカウンタ（下位）</td><td>読み取り専用</td></tr>
-      <tr><td>0xD304</td><td>フレームカウンタ（上位）</td><td>読み取り専用</td></tr>
+      <tr><th>アドレス</th><th>名前</th><th>R/W</th><th>説明</th></tr>
+      <tr><td>0xD302</td><td>RANDOM</td><td>R</td><td>乱数値（0-255）、読み取りごとに更新</td></tr>
+      <tr><td>0xD303</td><td>FRAME_LOW</td><td>R</td><td>フレームカウンタ下位8bit</td></tr>
+      <tr><td>0xD304</td><td>FRAME_HIGH</td><td>R</td><td>フレームカウンタ上位8bit</td></tr>
     </table>
 
-    <h2>6. サンプルプログラム</h2>
+    <h2>6. エミュレーター実装ガイド</h2>
 
-    <h3>6.1 音階を鳴らす</h3>
+    <h3>6.1 基本構造（JavaScript）</h3>
+    <pre>class XVM16Lite {
+  constructor() {
+    // レジスタ
+    this.A = 0;
+    this.X = 0;
+    this.Y = 0;
+    this.SP = 0x01FF;
+    this.PC = 0xE000;
+    this.F = 0; // Z,C,N
+    
+    // メモリ
+    this.ram = new Uint8Array(0x8000);        // 0x0000-0x7FFF
+    this.vram = new Uint8Array(0x10000);      // 0x8000-0xFFFF
+    this.palette = new Uint8Array(256);       // 0xD000-0xD0FF
+    this.spriteAttr = new Uint8Array(256);    // 0xD100-0xD1FF
+    this.spriteTiles = new Uint8Array(0x4000); // 0x2000-0x5FFF
+    this.midiRegs = new Uint8Array(256);      // 0xD200-0xD2FF
+    this.ioRegs = new Uint8Array(256);        // 0xD300-0xD3FF
+    this.rom = new Uint8Array(0x2000);        // 0xE000-0xFFFF
+    
+    this.halted = false;
+    this.cycles = 0;
+    this.frameCount = 0;
+    
+    this.initDefaultPalette();
+  }
+  
+  initDefaultPalette() {
+    const defaults = [
+      0x00, 0xFF, 0xE0, 0x1C, 0x03, 0xFC, 0xE3, 0x1F,
+      0x92, 0x6D, 0xB8, 0x9F, 0x13, 0xA3, 0xFD, 0xB6
+    ];
+    for (let i = 0; i < 16; i++) {
+      this.palette[i] = defaults[i];
+    }
+  }
+  
+  // フラグ操作
+  setZ(val) { this.F = (this.F & ~0x01) | ((val & 0xFF) === 0 ? 0x01 : 0); }
+  setC(val) { this.F = (this.F & ~0x02) | (val ? 0x02 : 0); }
+  setN(val) { this.F = (this.F & ~0x04) | ((val & 0x80) ? 0x04 : 0); }
+  setZN(val) { this.setZ(val); this.setN(val); }
+  
+  getZ() { return (this.F & 0x01) !== 0; }
+  getC() { return (this.F & 0x02) !== 0; }
+  getN() { return (this.F & 0x04) !== 0; }
+}</pre>
+
+    <h3>6.2 メモリアクセス</h3>
+    <pre>read8(addr) {
+  addr &= 0xFFFF;
+  
+  if (addr < 0x8000) {
+    return this.ram[addr];
+  } else if (addr >= 0xD000 && addr < 0xD100) {
+    return this.palette[addr - 0xD000];
+  } else if (addr >= 0xD100 && addr < 0xD200) {
+    return this.spriteAttr[addr - 0xD100];
+  } else if (addr >= 0xD200 && addr < 0xD300) {
+    return this.midiRegs[addr - 0xD200];
+  } else if (addr >= 0xD300 && addr < 0xD400) {
+    return this.ioRegs[addr - 0xD300];
+  } else if (addr >= 0xE000) {
+    return this.rom[addr - 0xE000];
+  } else {
+    return this.vram[addr - 0x8000];
+  }
+}
+
+write8(addr, val) {
+  addr &= 0xFFFF;
+  val &= 0xFF;
+  
+  if (addr < 0x8000) {
+    this.ram[addr] = val;
+    // スプライトタイル領域の特殊処理
+    if (addr >= 0x2000 && addr < 0x6000) {
+      this.spriteTiles[addr - 0x2000] = val;
+    }
+  } else if (addr >= 0xD000 && addr < 0xD100) {
+    this.palette[addr - 0xD000] = val;
+    this.vram[addr - 0x8000] = val; // VRAM にも書き込み
+  } else if (addr >= 0xD100 && addr < 0xD200) {
+    this.spriteAttr[addr - 0xD100] = val;
+    this.vram[addr - 0x8000] = val;
+  } else if (addr >= 0xD200 && addr < 0xD300) {
+    this.midiRegs[addr - 0xD200] = val;
+    this.handleMIDIWrite(addr, val);
+    this.vram[addr - 0x8000] = val;
+  } else if (addr >= 0xD300 && addr < 0xD400) {
+    if (addr >= 0xD302) { // 0xD300-0xD301は読み取り専用
+      this.ioRegs[addr - 0xD300] = val;
+    }
+  } else if (addr >= 0xE000) {
+    // ROM領域は書き込み不可
+  } else {
+    this.vram[addr - 0x8000] = val;
+  }
+}
+
+read16(addr) {
+  const lo = this.read8(addr);
+  const hi = this.read8(addr + 1);
+  return (hi << 8) | lo;
+}
+
+fetchByte() {
+  const val = this.read8(this.PC);
+  this.PC = (this.PC + 1) & 0xFFFF;
+  return val;
+}
+
+fetchWord() {
+  const lo = this.fetchByte();
+  const hi = this.fetchByte();
+  return (hi << 8) | lo;
+}</pre>
+
+    <h3>6.3 命令実行ループ</h3>
+    <pre>step() {
+  if (this.halted) return;
+  
+  const opcode = this.fetchByte();
+  const startCycles = this.cycles;
+  
+  this.execute(opcode);
+  
+  return this.cycles - startCycles;
+}
+
+runFrame() {
+  const targetCycles = 66667;
+  this.cycles = 0;
+  
+  while (this.cycles < targetCycles && !this.halted) {
+    this.step();
+  }
+  
+  this.frameCount++;
+  this.ioRegs[3] = this.frameCount & 0xFF;
+  this.ioRegs[4] = (this.frameCount >> 8) & 0xFF;
+  this.ioRegs[2] = Math.floor(Math.random() * 256);
+}</pre>
+
+    <h3>6.4 命令実装例</h3>
+    <pre>execute(opcode) {
+  switch (opcode) {
+    // LDA #nn
+    case 0xA9: {
+      this.A = this.fetchByte();
+      this.setZN(this.A);
+      this.cycles += 2;
+      break;
+    }
+    
+    // LDA addr
+    case 0xAD: {
+      const addr = this.fetchWord();
+      this.A = this.read8(addr);
+      this.setZN(this.A);
+      this.cycles += 4;
+      break;
+    }
+    
+    // STA addr
+    case 0x8D: {
+      const addr = this.fetchWord();
+      this.write8(addr, this.A);
+      this.cycles += 4;
+      break;
+    }
+    
+    // ADC #nn
+    case 0x69: {
+      const val = this.fetchByte();
+      const result = this.A + val + (this.getC() ? 1 : 0);
+      this.setC(result > 255);
+      this.A = result & 0xFF;
+      this.setZN(this.A);
+      this.cycles += 2;
+      break;
+    }
+    
+    // JMP addr
+    case 0x4C: {
+      this.PC = this.fetchWord();
+      this.cycles += 3;
+      break;
+    }
+    
+    // BEQ rel
+    case 0xF0: {
+      const offset = this.fetchByte();
+      this.cycles += 2;
+      if (this.getZ()) {
+        const signedOffset = offset > 127 ? offset - 256 : offset;
+        this.PC = (this.PC + signedOffset) & 0xFFFF;
+        this.cycles += 1;
+      }
+      break;
+    }
+    
+    // JSR addr
+    case 0x20: {
+      const addr = this.fetchWord();
+      const returnAddr = (this.PC - 1) & 0xFFFF;
+      this.write8(this.SP, (returnAddr >> 8) & 0xFF);
+      this.SP = (this.SP - 1) & 0xFFFF;
+      this.write8(this.SP, returnAddr & 0xFF);
+      this.SP = (this.SP - 1) & 0xFFFF;
+      this.PC = addr;
+      this.cycles += 6;
+      break;
+    }
+    
+    // RTS
+    case 0x60: {
+      this.SP = (this.SP + 1) & 0xFFFF;
+      const lo = this.read8(this.SP);
+      this.SP = (this.SP + 1) & 0xFFFF;
+      const hi = this.read8(this.SP);
+      this.PC = (((hi << 8) | lo) + 1) & 0xFFFF;
+      this.cycles += 6;
+      break;
+    }
+    
+    // BRK
+    case 0x00: {
+      this.halted = true;
+      this.cycles += 7;
+      break;
+    }
+    
+    // NOP
+    case 0xEA: {
+      this.cycles += 2;
+      break;
+    }
+    
+    default:
+      console.error(`Unknown opcode: 0x${opcode.toString(16).toUpperCase()}`);
+      this.halted = true;
+  }
+}</pre>
+
+    <h3>6.5 MIDI処理</h3>
+    <pre>async initMIDI() {
+  try {
+    this.midiAccess = await navigator.requestMIDIAccess();
+    this.midiOutput = Array.from(this.midiAccess.outputs.values())[0];
+    if (!this.midiOutput) {
+      console.warn('MIDI output not found');
+    }
+  } catch (e) {
+    console.error('Web MIDI API not supported', e);
+  }
+}
+
+handleMIDIWrite(addr, val) {
+  const offset = addr - 0xD200;
+  
+  // 0xD203: 送信トリガー
+  if (offset === 3) {
+    const cmd = this.midiRegs[0];
+    const data1 = this.midiRegs[1];
+    const data2 = this.midiRegs[2];
+    
+    if (this.midiOutput) {
+      // データバイトは7bit（0-127）にマスク
+      this.midiOutput.send([cmd, data1 & 0x7F, data2 & 0x7F]);
+    }
+  }
+  // 0xD204-0xD213: 音色変更
+  else if (offset >= 4 && offset < 20) {
+    const ch = offset - 4;
+    if (this.midiOutput) {
+      this.midiOutput.send([0xC0 + ch, val & 0x7F]);
+    }
+  }
+  // 0xD214-0xD223: 音量（CC#7）
+  else if (offset >= 20 && offset < 36) {
+    const ch = offset - 20;
+    if (this.midiOutput) {
+      this.midiOutput.send([0xB0 + ch, 7, val & 0x7F]);
+    }
+  }
+  // 0xD224-0xD233: パン（CC#10）
+  else if (offset >= 36 && offset < 52) {
+    const ch = offset - 36;
+    if (this.midiOutput) {
+      this.midiOutput.send([0xB0 + ch, 10, val & 0x7F]);
+    }
+  }
+}</pre>
+
+    <h3>6.6 画面描画</h3>
+    <pre>render(canvas) {
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(256, 256);
+  const pixels = imageData.data;
+  
+  // BG描画
+  for (let y = 0; y < 256; y++) {
+    for (let x = 0; x < 256; x++) {
+      const colorIdx = this.vram[y * 256 + x];
+      const rgb332 = this.palette[colorIdx];
+      
+      const r = ((rgb332 >> 5) & 0x07) * 36;
+      const g = ((rgb332 >> 2) & 0x07) * 36;
+      const b = (rgb332 & 0x03) * 85;
+      
+      const offset = (y * 256 + x) * 4;
+      pixels[offset] = r;
+      pixels[offset + 1] = g;
+      pixels[offset + 2] = b;
+      pixels[offset + 3] = 255;
+    }
+  }
+  
+  ctx.putImageData(imageData, 0, 0);
+  this.renderSprites(ctx);
+}
+
+renderSprites(ctx) {
+  for (let i = 0; i < 64; i++) {
+    const x = this.spriteAttr[i * 4];
+    const y = this.spriteAttr[i * 4 + 1];
+    const tile = this.spriteAttr[i * 4 + 2];
+    const flags = this.spriteAttr[i * 4 + 3];
+    
+    if (!(flags & 0x01)) continue;
+    
+    const flipX = (flags & 0x02) !== 0;
+    const flipY = (flags & 0x04) !== 0;
+    
+    for (let sy = 0; sy < 16; sy++) {
+      for (let sx = 0; sx < 16; sx++) {
+        const colorIdx = this.spriteTiles[tile * 256 + sy * 16 + sx];
+        if (colorIdx === 0) continue;
+        
+        const rgb332 = this.palette[colorIdx];
+        const r = ((rgb332 >> 5) & 0x07) * 36;
+        const g = ((rgb332 >> 2) & 0x07) * 36;
+        const b = (rgb332 & 0x03) * 85;
+        
+        const px = x + (flipX ? (15 - sx) : sx);
+        const py = y + (flipY ? (15 - sy) : sy);
+        
+        if (px >= 0 && px < 256 && py >= 0 && py < 256) {
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.fillRect(px, py, 1, 1);
+        }
+      }
+    }
+  }
+}</pre>
+
+    <h2>7. サンプルプログラム</h2>
+
+    <h3>7.1 画面塗りつぶし</h3>
+    <pre>; 赤色（パレット2番）で画面全体を塗る
+
+E000: A9 02     LDA #$02      ; A = 2（赤色）
+E002: A2 00     LDX #$00      ; X = 0
+E004: A0 00     LDY #$00      ; Y = 0
+
+; 外側ループ（Y = 0-255）
+E006: A9 02     LDA #$02      ; A = 2
+E008: 8D 00 80  STA $8000     ; VRAM[0x8000] = 2
+E00B: E8        INX           ; X++
+E00C: D0 F8     BNE $E006     ; X != 0 なら E006へ
+E00E: C8        INY           ; Y++
+E00F: D0 F5     BNE $E006     ; Y != 0 なら E006へ
+
+E011: 00        BRK           ; 終了</pre>
+
+    <h3>7.2 音階演奏</h3>
     <pre>; C4からC5までの音階を順に鳴らす
 
-      LDX #60       ; ノート番号 = 60 (C4)
-LOOP:
-      LDA #$90      ; Note On, ch1
-      STA $D200
-      
-      STX $D201     ; ノート番号
-      
-      LDA #100      ; ベロシティ
-      STA $D202
-      
-      LDA #$00      ; 送信実行
-      STA $D203
-      
-      ; 60フレーム(1秒)待機
-      LDY #60
-WAIT:
-      LDA $D303     ; フレームカウンタ監視
-      CMP $D303
-      BEQ WAIT
-      INY
-      CPY #60
-      BNE WAIT
-      
-      ; Note Off
-      LDA #$80
-      STA $D200
-      STX $D201
-      LDA #64
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      INX           ; 次のノート
-      CPX #73       ; C5まで?
-      BNE LOOP
-      
-      HLT</pre>
+E000: A2 3C     LDX #$3C      ; X = 60（C4）
 
-    <h3>6.2 和音を鳴らす</h3>
-    <pre>; C-E-Gのトライアド（Cメジャー）を鳴らす
+; ループ開始
+E002: A9 90     LDA #$90      ; Note On, Ch1
+E004: 8D 00 D2  STA $D200
+E007: 8E 01 D2  STX $D201     ; ノート番号
+E00A: A9 64     LDA #$64      ; ベロシティ100
+E00C: 8D 02 D2  STA $D202
+E00F: A9 00     LDA #$00
+E011: 8D 03 D2  STA $D203     ; 送信
 
-      ; C4 (60)
-      LDA #$90
-      STA $D200
-      LDA #60
-      STA $D201
-      LDA #100
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      ; E4 (64)
-      LDA #$90
-      STA $D200
-      LDA #64
-      STA $D201
-      LDA #100
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      ; G4 (67)
-      LDA #$90
-      STA $D200
-      LDA #67
-      STA $D201
-      LDA #100
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      ; 2秒待機してから停止...
-      HLT</pre>
+; 60フレーム待機（簡易版）
+E014: A0 3C     LDY #$3C      ; Y = 60
+E016: 88        DEY           ; Y--
+E017: D0 FD     BNE $E016     ; Y != 0 なら E016へ
 
-    <h2>7. メモリレイアウト</h2>
+; Note Off
+E019: A9 80     LDA #$80      ; Note Off, Ch1
+E01B: 8D 00 D2  STA $D200
+E01E: 8E 01 D2  STX $D201
+E021: A9 40     LDA #$40
+E023: 8D 02 D2  STA $D202
+E026: A9 00     LDA #$00
+E028: 8D 03 D2  STA $D203
 
-    <pre>完全なメモリマップ（64KB）:
+E02B: E8        INX           ; 次のノート
+E02C: E0 49     CPX #$49      ; X == 73（C5）?
+E02E: D0 D2     BNE $E002     ; まだなら続行
 
-0x0000 ┌─────────────────┐
-       │ ゼロページRAM   │ 256B  高速アクセス変数領域
-0x0100 ├─────────────────┤
-       │ スタック        │ 256B  サブルーチン用
-0x0200 ├─────────────────┤
-       │ 汎用RAM         │ 31.5KB プログラムデータ/ワーク
-0x2000 ├─────────────────┤
-       │ スプライトタイル│ 16KB  256個の16x16タイル
-0x6000 ├─────────────────┤
-       │ 汎用RAM続き     │ 8KB
-0x8000 ├─────────────────┤
-       │ VRAM (BG)       │ 64KB  256x256ピクセル
-       │                 │       (0x8000-0xFFFF)
-0xD000 ├─ ─ ─ ─ ─ ─ ─ ─ ┤ ※VRAMと重複
-       │ パレット        │ 256B  256色RGB332
-0xD100 ├─ ─ ─ ─ ─ ─ ─ ─ ┤
-       │ スプライト属性  │ 256B  64個x4バイト
-0xD200 ├─ ─ ─ ─ ─ ─ ─ ─ ┤
-       │ MIDIレジスタ    │ 256B  MIDI制御
-0xD300 ├─ ─ ─ ─ ─ ─ ─ ─ ┤
-       │ I/Oレジスタ     │ 256B  入力/その他
-0xD400 ├─────────────────┤
-       │ VRAM続き        │
-0xE000 ├─────────────────┤
-       │ ROM             │ 8KB   プログラムコード
-0xFFFF └─────────────────┘</pre>
+E030: 00        BRK           ; 終了</pre>
 
-    <h2>8. 削減内容まとめ</h2>
+    <h3>7.3 スプライト移動</h3>
+    <pre>; 方向キーでスプライト0を移動
 
-    <table>
-      <tr><th>項目</th><th>旧仕様</th><th>新仕様</th></tr>
-      <tr><td>命令数</td><td>70以上</td><td><strong>25</strong></td></tr>
-      <tr><td>レジスタ数</td><td>A,B,C,D,X,Y,SP,PC,F</td><td><strong>A,X,Y,SP,PC,F</strong></td></tr>
-      <tr><td>フラグ</td><td>Z,C,N,V</td><td><strong>Z,C,N</strong>（Vフラグ削除）</td></tr>
-      <tr><td>音源</td><td>4ch矩形波</td><td><strong>MIDI 16ch</strong></td></tr>
-      <tr><td>サウンドレジスタ</td><td>8バイト x 4ch</td><td><strong>シンプルなMIDI制御</strong></td></tr>
-    </table>
+E000: A9 80     LDA #$80      ; 初期X座標
+E002: 8D 00 D1  STA $D100
+E005: A9 80     LDA #$80      ; 初期Y座標
+E007: 8D 01 D1  STA $D101
+E00A: A9 00     LDA #$00      ; タイル0
+E00C: 8D 02 D1  STA $D102
+E00F: A9 01     LDA #$01      ; 有効化
+E011: 8D 03 D1  STA $D103
 
-    <h2>9. 利点</h2>
+; メインループ
+E014: AD 00 D3  LDA $D300     ; コントローラー読み取り
+E017: 29 01     AND #$01      ; 上ボタン？
+E019: F0 08     BEQ $E023     ; 押されてない
+E01B: AD 01 D1  LDA $D101     ; Y座標読み取り
+E01E: 69 FF     ADC #$FF      ; Y-- (ADCで-1)
+E020: 8D 01 D1  STA $D101     ; Y座標書き込み
 
-    <h3>9.1 実装の容易さ</h3>
-    <ul>
-      <li>命令セット25個で実装時間が1/3に</li>
-      <li>レジスタ削減でデバッグが容易</li>
-      <li>アセンブラも簡単に作成可能</li>
-    </ul>
+E023: AD 00 D3  LDA $D300
+E026: 29 02     AND #$02      ; 下ボタン？
+E028: F0 08     BEQ $E032
+E02A: AD 01 D1  LDA $D101
+E02D: 69 01     ADC #$01      ; Y++
+E02F: 8D 01 D1  STA $D101
 
-    <h3>9.2 学習の容易さ</h3>
-    <ul>
-      <li>覚える命令が少ない（25個）</li>
-      <li>6502風のシンプルな設計</li>
-      <li>初心者でも数時間で習得可能</li>
-    </ul>
+E032: 4C 14 E0  JMP $E014     ; ループ</pre>
 
-    <h3>9.3 音楽表現力の向上</h3>
-    <ul>
-      <li>MIDIで128音色が利用可能</li>
-      <li>16チャンネル同時発音</li>
-      <li>ピアノ、ストリングス、ドラムなど本格的な音楽制作</li>
-      <li>既存のMIDIシーケンサーとの連携</li>
-    </ul>
+    <h2>8. デバッグ支援</h2>
 
-    <div class="important">
-      <strong>トレードオフ:</strong> 命令削減により一部の処理は複数命令の組み合わせが必要になるが、
-      シンプルさと学習コストの低下がそれを補って余りある利点となる。
-    </div>
+    <h3>8.1 デバッガ機能</h3>
+    <pre>class Debugger {
+  constructor(vm) {
+    this.vm = vm;
+    this.breakpoints = new Set();
+    this.watchpoints = new Set();
+  }
+  
+  addBreakpoint(addr) {
+    this.breakpoints.add(addr);
+  }
+  
+  step() {
+    const pc = this.vm.PC;
+    const opcode = this.vm.read8(pc);
+    
+    console.log(`PC: ${pc.toString(16).toUpperCase().padStart(4,'0')} ` +
+                `A: ${this.vm.A.toString(16).toUpperCase().padStart(2,'0')} ` +
+                `X: ${this.vm.X.toString(16).toUpperCase().padStart(2,'0')} ` +
+                `Y: ${this.vm.Y.toString(16).toUpperCase().padStart(2,'0')} ` +
+                `SP: ${this.vm.SP.toString(16).toUpperCase().padStart(4,'0')} ` +
+                `F: ${this.vm.F.toString(2).padStart(8,'0')}`);
+    
+    this.vm.step();
+  }
+  
+  disassemble(addr, count = 10) {
+    const instructions = [];
+    for (let i = 0; i < count; i++) {
+      const opcode = this.vm.read8(addr);
+      const instr = this.decodeInstruction(addr);
+      instructions.push(`${addr.toString(16).padStart(4,'0')}: ${instr}`);
+      addr += this.getInstructionLength(opcode);
+    }
+    return instructions.join('\n');
+  }
+}</pre>
 
     <div style="margin-top: 50px; padding: 25px; background: #0a0a0a; border: 2px solid #0f0; text-align: center;">
-      <h3 style="color: #0f0; margin-top: 0;">XVM-16 Lite + MIDI 仕様書 v2.0</h3>
+      <h3 style="color: #0f0; margin-top: 0;">XVM-16 Lite 完全版仕様書 v1.0</h3>
       <p style="color: #888; margin: 10px 0;">
         256x256解像度 | 256色 | MIDI 16ch | スプライト64個<br>
-        命令セット25個 | シンプル設計 | 教育・ゲーム開発対応
+        命令セット25個 | エミュレーター実装完全対応
       </p>
       <p style="color: #0ff; font-size: 12px; margin-top: 15px;">
         CC0 Public Domain - 自由に使用・改変・配布できます
