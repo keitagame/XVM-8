@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>XVM-16 Lite + MIDI Specification</title>
+  <title>XVM-16 Lite Complete Specification (MIDI Support)</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root {
@@ -46,14 +46,14 @@
       margin-top: 20px;
     }
     .container {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 0 auto;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin: 15px 0;
-      font-size: 14px;
+      font-size: 13px;
     }
     th, td {
       border: 1px solid #444;
@@ -108,455 +108,471 @@
 </head>
 <body>
   <div class="container">
-    <h1>XVM-16 Lite + MIDI Specification</h1>
-    <p style="color: #888;">Simple 8-bit Virtual Machine - Reduced Instruction Set + MIDI Edition</p>
+    <h1>XVM-16 Lite Complete Specification (MIDI Support)</h1>
+    <p style="color: #888;">Complete Emulator Implementation Guide - 25 Instructions + MIDI</p>
 
     <div class="spec-box">
-      <strong style="color: #0f0;">Concept:</strong> 
-      A minimalist virtual machine with reduced instruction set for easy learning and implementation.
-      Features MIDI sound output for rich musical expression. 256x256 resolution, 256 colors, 16 MIDI channels.
+      <strong style="color: #0f0;">About This Specification:</strong><br>
+      This document contains all information needed to implement an XVM-16 Lite virtual machine emulator.
+      The instruction set is reduced to 25 for ease of learning and implementation, while maintaining practical game development capability.
     </div>
 
-    <h2>1. Basic Specifications</h2>
+    <h2>1. Hardware Specifications</h2>
     
-    <h3>1.1 CPU</h3>
-    <ul>
-      <li><strong>Bit Width:</strong> 8-bit CPU</li>
-      <li><strong>Address Space:</strong> 16-bit (64KB)</li>
-      <li><strong>Clock Speed:</strong> 4MHz</li>
-      <li><strong>Refresh Rate:</strong> 60Hz</li>
-      <li><strong>Cycles/Frame:</strong> 66,667 cycles</li>
-    </ul>
-
-    <h3>1.2 Registers (Simplified)</h3>
+    <h3>1.1 CPU Specifications</h3>
     <table>
-      <tr><th>Name</th><th>Size</th><th>Description</th></tr>
-      <tr><td><code>A</code></td><td>8-bit</td><td>Accumulator (computation results)</td></tr>
-      <tr><td><code>X</code></td><td>8-bit</td><td>X Index Register</td></tr>
-      <tr><td><code>Y</code></td><td>8-bit</td><td>Y Index Register</td></tr>
-      <tr><td><code>SP</code></td><td>16-bit</td><td>Stack Pointer (initial: 0x01FF)</td></tr>
-      <tr><td><code>PC</code></td><td>16-bit</td><td>Program Counter (initial: 0xE000)</td></tr>
-      <tr><td><code>F</code></td><td>8-bit</td><td>Flag Register</td></tr>
+      <tr><th>Item</th><th>Specification</th></tr>
+      <tr><td>Bit Width</td><td>8-bit CPU</td></tr>
+      <tr><td>Address Space</td><td>16-bit (64KB = 65,536 bytes)</td></tr>
+      <tr><td>Clock Speed</td><td>4MHz (4,000,000 Hz)</td></tr>
+      <tr><td>Refresh Rate</td><td>60Hz (60 frames per second)</td></tr>
+      <tr><td>Cycles per Frame</td><td>66,667 cycles (4,000,000 ÷ 60)</td></tr>
+      <tr><td>Endianness</td><td>Little-endian (low byte first)</td></tr>
     </table>
 
-    <div class="note">
-      <strong>Simplification:</strong> Removed B, C, D registers, keeping only A, X, Y.
-    </div>
-
-    <h4>Flag Register (F)</h4>
+    <h3>1.2 Registers</h3>
     <table>
-      <tr><th>Bit</th><th>Name</th><th>Description</th></tr>
-      <tr><td>bit 0</td><td>Z (Zero)</td><td>Result is zero</td></tr>
-      <tr><td>bit 1</td><td>C (Carry)</td><td>Carry/Borrow occurred</td></tr>
-      <tr><td>bit 2</td><td>N (Negative)</td><td>Result is negative (bit7=1)</td></tr>
-      <tr><td>bit 3-7</td><td>-</td><td>Unused (always 0)</td></tr>
+      <tr><th>Name</th><th>Size</th><th>Initial</th><th>Description</th></tr>
+      <tr><td><code>A</code></td><td>8-bit</td><td>0x00</td><td>Accumulator. Stores arithmetic operation results</td></tr>
+      <tr><td><code>X</code></td><td>8-bit</td><td>0x00</td><td>X Index Register. Used for array access, etc.</td></tr>
+      <tr><td><code>Y</code></td><td>8-bit</td><td>0x00</td><td>Y Index Register. Used for array access, etc.</td></tr>
+      <tr><td><code>SP</code></td><td>16-bit</td><td>0x01FF</td><td>Stack Pointer. Grows downward (decrements)</td></tr>
+      <tr><td><code>PC</code></td><td>16-bit</td><td>0xE000</td><td>Program Counter. Address of next instruction to execute</td></tr>
+      <tr><td><code>F</code></td><td>8-bit</td><td>0x00</td><td>Flag Register. Holds operation result status</td></tr>
+    </table>
+
+    <h4>Flag Register (F) Details</h4>
+    <table>
+      <tr><th>Bit</th><th>Name</th><th>Description</th><th>Set Condition</th></tr>
+      <tr><td>bit 0</td><td>Z (Zero)</td><td>Zero flag</td><td>Set to 1 when result is 0x00</td></tr>
+      <tr><td>bit 1</td><td>C (Carry)</td><td>Carry flag</td><td>Set to 1 on addition carry or subtraction no-borrow</td></tr>
+      <tr><td>bit 2</td><td>N (Negative)</td><td>Negative flag</td><td>Set to 1 when bit7 of result is 1 (signed negative)</td></tr>
+      <tr><td>bit 3-7</td><td>-</td><td>Unused</td><td>Always 0</td></tr>
     </table>
 
     <h3>1.3 Memory Map</h3>
     <table>
-      <tr><th>Address</th><th>Size</th><th>Description</th></tr>
-      <tr><td>0x0000-0x00FF</td><td>256B</td><td>Zero Page RAM</td></tr>
-      <tr><td>0x0100-0x01FF</td><td>256B</td><td>Stack Area</td></tr>
-      <tr><td>0x0200-0x7FFF</td><td>31.5KB</td><td>General Purpose RAM</td></tr>
-      <tr><td>0x8000-0xFFFF</td><td>32KB</td><td><strong>VRAM (Graphics Only)</strong></td></tr>
-      <tr><td>0xD000-0xD0FF</td><td>256B</td><td>Palette Memory (256 colors)</td></tr>
-      <tr><td>0xD100-0xD1FF</td><td>256B</td><td>Sprite Attribute Table (64 sprites)</td></tr>
-      <tr><td>0xD200-0xD2FF</td><td>256B</td><td>MIDI Registers</td></tr>
-      <tr><td>0xD300-0xD3FF</td><td>256B</td><td>I/O Registers</td></tr>
-      <tr><td>0xE000-0xFFFF</td><td>8KB</td><td>ROM (Program Area)</td></tr>
+      <tr><th>Start</th><th>End</th><th>Size</th><th>Name</th><th>Purpose</th><th>Read</th><th>Write</th></tr>
+      <tr><td>0x0000</td><td>0x00FF</td><td>256B</td><td>Zero Page RAM</td><td>Fast access variable area</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0x0100</td><td>0x01FF</td><td>256B</td><td>Stack</td><td>Subroutine calls</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0x0200</td><td>0x1FFF</td><td>7.5KB</td><td>General RAM</td><td>Program work area</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0x2000</td><td>0x5FFF</td><td>16KB</td><td>Sprite Tiles</td><td>256 tiles of 16x16</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0x6000</td><td>0x7FFF</td><td>8KB</td><td>General RAM</td><td>Additional work area</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0x8000</td><td>0xFFFF</td><td>32KB</td><td>VRAM</td><td>256x256 pixel data</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0xD000</td><td>0xD0FF</td><td>256B</td><td>Palette</td><td>256 colors RGB332</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0xD100</td><td>0xD1FF</td><td>256B</td><td>Sprite Attrs</td><td>64 sprites x 4 bytes</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0xD200</td><td>0xD2FF</td><td>256B</td><td>MIDI</td><td>MIDI control registers</td><td>✓</td><td>✓</td></tr>
+      <tr><td>0xD300</td><td>0xD3FF</td><td>256B</td><td>I/O</td><td>Input and misc</td><td>✓</td><td>△</td></tr>
+      <tr><td>0xE000</td><td>0xFFFF</td><td>8KB</td><td>ROM</td><td>Program code</td><td>✓</td><td>×</td></tr>
     </table>
-
-    <h2>2. Instruction Set (Greatly Reduced)</h2>
 
     <div class="important">
-      <strong>Reduction Policy:</strong> Reduced from 70+ instructions to <strong>25 instructions</strong>.
-      Focused on basic operations, transfers, and branches for easier implementation and learning.
+      <strong>Memory Overlap:</strong><br>
+      The 0xD000-0xDFFF region physically overlaps with VRAM space (0x8000-0xFFFF).<br>
+      - On read: Returns I/O register/palette/sprite attribute values<br>
+      - On write: Writes to both I/O registers/palette/sprite attributes AND VRAM
     </div>
 
-    <h3>2.1 Data Transfer (6 instructions)</h3>
-    <table>
-      <tr><th>Instruction</th><th>Operand</th><th>Description</th><th>Cycles</th></tr>
-      <tr><td><code>LDA</code></td><td>imm/abs/zpg/idx</td><td>A ← Memory</td><td>2-4</td></tr>
-      <tr><td><code>LDX</code></td><td>imm/abs/zpg</td><td>X ← Memory</td><td>2-4</td></tr>
-      <tr><td><code>LDY</code></td><td>imm/abs/zpg</td><td>Y ← Memory</td><td>2-4</td></tr>
-      <tr><td><code>STA</code></td><td>abs/zpg/idx</td><td>Memory ← A</td><td>3-4</td></tr>
-      <tr><td><code>STX</code></td><td>abs/zpg</td><td>Memory ← X</td><td>3-4</td></tr>
-      <tr><td><code>STY</code></td><td>abs/zpg</td><td>Memory ← Y</td><td>3-4</td></tr>
-    </table>
+    <h2>2. Instruction Set (All 25 Instructions)</h2>
 
-    <h3>2.2 Arithmetic (5 instructions)</h3>
-    <table>
-      <tr><th>Instruction</th><th>Operand</th><th>Description</th><th>Flags</th></tr>
-      <tr><td><code>ADD</code></td><td>imm/abs/zpg</td><td>A ← A + Memory</td><td>Z,C,N</td></tr>
-      <tr><td><code>SUB</code></td><td>imm/abs/zpg</td><td>A ← A - Memory</td><td>Z,C,N</td></tr>
-      <tr><td><code>AND</code></td><td>imm/abs/zpg</td><td>A ← A & Memory</td><td>Z,N</td></tr>
-      <tr><td><code>ORA</code></td><td>imm/abs/zpg</td><td>A ← A | Memory</td><td>Z,N</td></tr>
-      <tr><td><code>CMP</code></td><td>imm/abs/zpg</td><td>A - Memory (compare only)</td><td>Z,C,N</td></tr>
-    </table>
+    <div class="spec-box">
+      <strong>Instruction Format:</strong><br>
+      Each instruction consists of 1-3 bytes.<br>
+      - Opcode (1 byte): Instruction type<br>
+      - Operand (0-2 bytes): Immediate data or address<br>
+      Little-endian: 16-bit addresses are stored as low byte → high byte
+    </div>
 
-    <h3>2.3 Increment/Decrement (4 instructions)</h3>
+    <h3>2.1 Data Transfer Instructions (6 instructions)</h3>
     <table>
-      <tr><th>Instruction</th><th>Operand</th><th>Description</th></tr>
-      <tr><td><code>INC</code></td><td>abs/zpg</td><td>Memory++</td></tr>
-      <tr><td><code>DEC</code></td><td>abs/zpg</td><td>Memory--</td></tr>
-      <tr><td><code>INX</code></td><td>-</td><td>X++</td></tr>
-      <tr><td><code>INY</code></td><td>-</td><td>Y++</td></tr>
-    </table>
-
-    <h3>2.4 Branching (4 instructions)</h3>
-    <table>
-      <tr><th>Instruction</th><th>Operand</th><th>Description</th></tr>
-      <tr><td><code>JMP</code></td><td>abs</td><td>Unconditional jump</td></tr>
-      <tr><td><code>BEQ</code></td><td>rel</td><td>Branch if Z=1</td></tr>
-      <tr><td><code>BNE</code></td><td>rel</td><td>Branch if Z=0</td></tr>
-      <tr><td><code>BCS</code></td><td>rel</td><td>Branch if C=1</td></tr>
-    </table>
-
-    <h3>2.5 Subroutine (2 instructions)</h3>
-    <table>
-      <tr><th>Instruction</th><th>Operand</th><th>Description</th></tr>
-      <tr><td><code>JSR</code></td><td>abs</td><td>Jump to subroutine</td></tr>
-      <tr><td><code>RTS</code></td><td>-</td><td>Return from subroutine</td></tr>
-    </table>
-
-    <h3>2.6 Stack (2 instructions)</h3>
-    <table>
-      <tr><th>Instruction</th><th>Operand</th><th>Description</th></tr>
-      <tr><td><code>PHA</code></td><td>-</td><td>Push A to stack</td></tr>
-      <tr><td><code>PLA</code></td><td>-</td><td>Pop A from stack</td></tr>
-    </table>
-
-    <h3>2.7 Other (2 instructions)</h3>
-    <table>
-      <tr><th>Instruction</th><th>Operand</th><th>Description</th></tr>
-      <tr><td><code>NOP</code></td><td>-</td><td>No operation</td></tr>
-      <tr><td><code>HLT</code></td><td>-</td><td>Halt execution</td></tr>
+      <tr><th>Instruction</th><th>Opcode</th><th>Bytes</th><th>Cycles</th><th>Description</th><th>Flags</th></tr>
+      <tr><td>LDA #nn</td><td>0xA9</td><td>2</td><td>2</td><td>A ← nn (immediate)</td><td>Z,N</td></tr>
+      <tr><td>LDA addr</td><td>0xAD</td><td>3</td><td>4</td><td>A ← [addr] (absolute)</td><td>Z,N</td></tr>
+      <tr><td>LDA zp</td><td>0xA5</td><td>2</td><td>3</td><td>A ← [0x00zp] (zero page)</td><td>Z,N</td></tr>
+      <tr><td>LDA addr,X</td><td>0xBD</td><td>3</td><td>4</td><td>A ← [addr+X] (indexed)</td><td>Z,N</td></tr>
+      <tr><td>LDX #nn</td><td>0xA2</td><td>2</td><td>2</td><td>X ← nn (immediate)</td><td>Z,N</td></tr>
+      <tr><td>LDX addr</td><td>0xAE</td><td>3</td><td>4</td><td>X ← [addr] (absolute)</td><td>Z,N</td></tr>
+      <tr><td>LDX zp</td><td>0xA6</td><td>2</td><td>3</td><td>X ← [0x00zp] (zero page)</td><td>Z,N</td></tr>
+      <tr><td>LDY #nn</td><td>0xA0</td><td>2</td><td>2</td><td>Y ← nn (immediate)</td><td>Z,N</td></tr>
+      <tr><td>LDY addr</td><td>0xAC</td><td>3</td><td>4</td><td>Y ← [addr] (absolute)</td><td>Z,N</td></tr>
+      <tr><td>LDY zp</td><td>0xA4</td><td>2</td><td>3</td><td>Y ← [0x00zp] (zero page)</td><td>Z,N</td></tr>
+      <tr><td>STA addr</td><td>0x8D</td><td>3</td><td>4</td><td>[addr] ← A (absolute)</td><td>-</td></tr>
+      <tr><td>STA zp</td><td>0x85</td><td>2</td><td>3</td><td>[0x00zp] ← A (zero page)</td><td>-</td></tr>
+      <tr><td>STA addr,X</td><td>0x9D</td><td>3</td><td>5</td><td>[addr+X] ← A (indexed)</td><td>-</td></tr>
+      <tr><td>STX addr</td><td>0x8E</td><td>3</td><td>4</td><td>[addr] ← X (absolute)</td><td>-</td></tr>
+      <tr><td>STX zp</td><td>0x86</td><td>2</td><td>3</td><td>[0x00zp] ← X (zero page)</td><td>-</td></tr>
+      <tr><td>STY addr</td><td>0x8C</td><td>3</td><td>4</td><td>[addr] ← Y (absolute)</td><td>-</td></tr>
+      <tr><td>STY zp</td><td>0x84</td><td>2</td><td>3</td><td>[0x00zp] ← Y (zero page)</td><td>-</td></tr>
     </table>
 
     <div class="note">
-      <strong>Total 25 instructions:</strong> Transfer 6 + Arithmetic 5 + Inc/Dec 4 + Branch 4 + Subroutine 2 + Stack 2 + Other 2
+      <strong>Implementation Notes:</strong><br>
+      - zp is 8-bit address. Actual address is in range 0x0000-0x00FF<br>
+      - addr is 16-bit address. Stored in little-endian (low→high)<br>
+      - Index mode overflow: (addr + X) & 0xFFFF
     </div>
 
-    <h3>2.8 Addressing Modes</h3>
+    <h3>2.2 Arithmetic Instructions (5 instructions)</h3>
     <table>
-      <tr><th>Abbr</th><th>Name</th><th>Example</th><th>Description</th></tr>
-      <tr><td>imm</td><td>Immediate</td><td><code>LDA #$42</code></td><td>Direct constant</td></tr>
-      <tr><td>abs</td><td>Absolute</td><td><code>LDA $1234</code></td><td>16-bit address</td></tr>
-      <tr><td>zpg</td><td>Zero Page</td><td><code>LDA $42</code></td><td>0x00xx (fast access)</td></tr>
-      <tr><td>idx</td><td>Indexed</td><td><code>LDA $1234,X</code></td><td>Address + X</td></tr>
-      <tr><td>rel</td><td>Relative</td><td><code>BEQ +5</code></td><td>PC relative (-128~+127)</td></tr>
+      <tr><th>Instruction</th><th>Opcode</th><th>Bytes</th><th>Cycles</th><th>Description</th><th>Flags</th></tr>
+      <tr><td>ADC #nn</td><td>0x69</td><td>2</td><td>2</td><td>A ← A + nn + C</td><td>Z,C,N</td></tr>
+      <tr><td>ADC addr</td><td>0x6D</td><td>3</td><td>4</td><td>A ← A + [addr] + C</td><td>Z,C,N</td></tr>
+      <tr><td>ADC zp</td><td>0x65</td><td>2</td><td>3</td><td>A ← A + [zp] + C</td><td>Z,C,N</td></tr>
+      <tr><td>SBC #nn</td><td>0xE9</td><td>2</td><td>2</td><td>A ← A - nn - (1-C)</td><td>Z,C,N</td></tr>
+      <tr><td>SBC addr</td><td>0xED</td><td>3</td><td>4</td><td>A ← A - [addr] - (1-C)</td><td>Z,C,N</td></tr>
+      <tr><td>SBC zp</td><td>0xE5</td><td>2</td><td>3</td><td>A ← A - [zp] - (1-C)</td><td>Z,C,N</td></tr>
+      <tr><td>AND #nn</td><td>0x29</td><td>2</td><td>2</td><td>A ← A & nn</td><td>Z,N</td></tr>
+      <tr><td>AND addr</td><td>0x2D</td><td>3</td><td>4</td><td>A ← A & [addr]</td><td>Z,N</td></tr>
+      <tr><td>AND zp</td><td>0x25</td><td>2</td><td>3</td><td>A ← A & [zp]</td><td>Z,N</td></tr>
+      <tr><td>ORA #nn</td><td>0x09</td><td>2</td><td>2</td><td>A ← A | nn</td><td>Z,N</td></tr>
+      <tr><td>ORA addr</td><td>0x0D</td><td>3</td><td>4</td><td>A ← A | [addr]</td><td>Z,N</td></tr>
+      <tr><td>ORA zp</td><td>0x05</td><td>2</td><td>3</td><td>A ← A | [zp]</td><td>Z,N</td></tr>
+      <tr><td>CMP #nn</td><td>0xC9</td><td>2</td><td>2</td><td>A - nn (compare, discard result)</td><td>Z,C,N</td></tr>
+      <tr><td>CMP addr</td><td>0xCD</td><td>3</td><td>4</td><td>A - [addr] (compare)</td><td>Z,C,N</td></tr>
+      <tr><td>CMP zp</td><td>0xC5</td><td>2</td><td>3</td><td>A - [zp] (compare)</td><td>Z,C,N</td></tr>
+    </table>
+
+    <div class="important">
+      <strong>ADC/SBC Operation Details:</strong><br>
+      <strong>ADC:</strong> result = A + operand + C; A = result & 0xFF; C = (result > 255) ? 1 : 0<br>
+      <strong>SBC:</strong> result = A - operand - (1 - C); A = result & 0xFF; C = (result >= 0) ? 1 : 0<br>
+      <strong>CMP:</strong> result = A - operand; C = (A >= operand) ? 1 : 0 (A is not modified)
+    </div>
+
+    <h3>2.3 Increment/Decrement (4 instructions)</h3>
+    <table>
+      <tr><th>Instruction</th><th>Opcode</th><th>Bytes</th><th>Cycles</th><th>Description</th><th>Flags</th></tr>
+      <tr><td>INC addr</td><td>0xEE</td><td>3</td><td>6</td><td>[addr] ← [addr] + 1</td><td>Z,N</td></tr>
+      <tr><td>INC zp</td><td>0xE6</td><td>2</td><td>5</td><td>[zp] ← [zp] + 1</td><td>Z,N</td></tr>
+      <tr><td>DEC addr</td><td>0xCE</td><td>3</td><td>6</td><td>[addr] ← [addr] - 1</td><td>Z,N</td></tr>
+      <tr><td>DEC zp</td><td>0xC6</td><td>2</td><td>5</td><td>[zp] ← [zp] - 1</td><td>Z,N</td></tr>
+      <tr><td>INX</td><td>0xE8</td><td>1</td><td>2</td><td>X ← X + 1</td><td>Z,N</td></tr>
+      <tr><td>INY</td><td>0xC8</td><td>1</td><td>2</td><td>Y ← Y + 1</td><td>Z,N</td></tr>
+      <tr><td>DEX</td><td>0xCA</td><td>1</td><td>2</td><td>X ← X - 1</td><td>Z,N</td></tr>
+      <tr><td>DEY</td><td>0x88</td><td>1</td><td>2</td><td>Y ← Y - 1</td><td>Z,N</td></tr>
+    </table>
+
+    <h3>2.4 Branch Instructions (4 instructions)</h3>
+    <table>
+      <tr><th>Instruction</th><th>Opcode</th><th>Bytes</th><th>Cycles</th><th>Description</th><th>Condition</th></tr>
+      <tr><td>JMP addr</td><td>0x4C</td><td>3</td><td>3</td><td>PC ← addr (unconditional jump)</td><td>-</td></tr>
+      <tr><td>BEQ rel</td><td>0xF0</td><td>2</td><td>2/3</td><td>If Z=1 then PC ← PC + rel</td><td>Z=1</td></tr>
+      <tr><td>BNE rel</td><td>0xD0</td><td>2</td><td>2/3</td><td>If Z=0 then PC ← PC + rel</td><td>Z=0</td></tr>
+      <tr><td>BCS rel</td><td>0xB0</td><td>2</td><td>2/3</td><td>If C=1 then PC ← PC + rel</td><td>C=1</td></tr>
+      <tr><td>BCC rel</td><td>0x90</td><td>2</td><td>2/3</td><td>If C=0 then PC ← PC + rel</td><td>C=0</td></tr>
+    </table>
+
+    <div class="note">
+      <strong>Relative Branch Details:</strong><br>
+      - rel is signed 8-bit (-128 to +127)<br>
+      - Negative values: if rel > 127 then interpret as rel - 256<br>
+      - Branch target = PC + rel (PC already points to next instruction)<br>
+      - Cycles: no branch=2, branch taken=3
+    </div>
+
+    <h3>2.5 Subroutine (2 instructions)</h3>
+    <table>
+      <tr><th>Instruction</th><th>Opcode</th><th>Bytes</th><th>Cycles</th><th>Description</th></tr>
+      <tr><td>JSR addr</td><td>0x20</td><td>3</td><td>6</td><td>Push PC-1 to stack and jump to addr</td></tr>
+      <tr><td>RTS</td><td>0x60</td><td>1</td><td>6</td><td>Pop address from stack and return to PC+1</td></tr>
+    </table>
+
+    <div class="important">
+      <strong>JSR/RTS Operation Details:</strong><br>
+      <strong>JSR:</strong><br>
+      1. return_addr = PC + 2 (next instruction after JSR)<br>
+      2. [SP] = (return_addr - 1) >> 8 (high byte); SP--<br>
+      3. [SP] = (return_addr - 1) & 0xFF (low byte); SP--<br>
+      4. PC = addr<br>
+      <strong>RTS:</strong><br>
+      1. SP++; low = [SP]<br>
+      2. SP++; high = [SP]<br>
+      3. PC = (high << 8 | low) + 1
+    </div>
+
+    <h3>2.6 Stack (2 instructions)</h3>
+    <table>
+      <tr><th>Instruction</th><th>Opcode</th><th>Bytes</th><th>Cycles</th><th>Description</th></tr>
+      <tr><td>PHA</td><td>0x48</td><td>1</td><td>3</td><td>[SP] ← A; SP--</td></tr>
+      <tr><td>PLA</td><td>0x68</td><td>1</td><td>4</td><td>SP++; A ← [SP]</td></tr>
+    </table>
+
+    <h3>2.7 Miscellaneous (2 instructions)</h3>
+    <table>
+      <tr><th>Instruction</th><th>Opcode</th><th>Bytes</th><th>Cycles</th><th>Description</th></tr>
+      <tr><td>NOP</td><td>0xEA</td><td>1</td><td>2</td><td>No operation</td></tr>
+      <tr><td>BRK</td><td>0x00</td><td>1</td><td>7</td><td>Break (halt execution)</td></tr>
     </table>
 
     <h2>3. Graphics Specifications</h2>
 
     <h3>3.1 Display</h3>
-    <ul>
-      <li><strong>Resolution:</strong> 256x256 pixels</li>
-      <li><strong>Colors:</strong> 256 colors (8-bit indexed color)</li>
-      <li><strong>VRAM Size:</strong> 65,536 bytes (256x256)</li>
-      <li><strong>Sprites:</strong> 64 sprites (16x16 pixels each)</li>
-      <li><strong>Layers:</strong> BG + Sprites (2 layers)</li>
-    </ul>
+    <table>
+      <tr><th>Item</th><th>Specification</th></tr>
+      <tr><td>Resolution</td><td>256x256 pixels</td></tr>
+      <tr><td>Colors</td><td>256 colors (8-bit indexed color)</td></tr>
+      <tr><td>VRAM Size</td><td>65,536 bytes (256×256)</td></tr>
+      <tr><td>VRAM Address</td><td>0x8000-0xFFFF</td></tr>
+      <tr><td>Pixel Access</td><td>VRAM[y * 256 + x] = color_index (0-255)</td></tr>
+    </table>
 
     <h3>3.2 Color Palette</h3>
-    <p><strong>Address:</strong> 0xD000-0xD0FF (256 colors)</p>
-    <p><strong>Format:</strong> RGB332 (8-bit)</p>
-    <pre>RGB332 Format:
-RRR GGG BB
-|||  |  ||
-|||  |  ++-- Blue (0-3)  ×85 → 0-255
-|||  +------ Green (0-7) ×36 → 0-252
-+++--------- Red (0-7)   ×36 → 0-252</pre>
-
-    <h3>3.3 Sprite Specifications</h3>
-    <p><strong>Sprite Count:</strong> Maximum 64 sprites</p>
-    <p><strong>Size:</strong> 16x16 pixels (fixed)</p>
-    <p><strong>Attribute Table:</strong> 0xD100-0xD1FF (4 bytes per sprite)</p>
-
-    <h4>Sprite Attributes (4 bytes/sprite)</h4>
     <table>
-      <tr><th>Offset</th><th>Content</th></tr>
-      <tr><td>+0</td><td>X coordinate (0-255)</td></tr>
-      <tr><td>+1</td><td>Y coordinate (0-255)</td></tr>
-      <tr><td>+2</td><td>Tile number (0-255)</td></tr>
-      <tr><td>+3</td><td>Flags (bit0=enable, bit1=flip X, bit2=flip Y)</td></tr>
+      <tr><th>Item</th><th>Specification</th></tr>
+      <tr><td>Address</td><td>0xD000-0xD0FF</td></tr>
+      <tr><td>Format</td><td>RGB332 (8-bit)</td></tr>
+      <tr><td>Bit Layout</td><td>RRRGGGBB</td></tr>
     </table>
+
+    <h4>RGB332 to RGB888 Conversion</h4>
+    <pre>uint8_t rgb332 = palette[color_index];
+uint8_t r = ((rgb332 >> 5) & 0x07) * 36;  // 0-7 → 0-252
+uint8_t g = ((rgb332 >> 2) & 0x07) * 36;  // 0-7 → 0-252
+uint8_t b = (rgb332 & 0x03) * 85;         // 0-3 → 0-255</pre>
+
+    <h4>Default Palette (0-15)</h4>
+    <pre>const uint8_t default_palette[16] = {
+  0x00, // 0:  Black
+  0xFF, // 1:  White
+  0xE0, // 2:  Red
+  0x1C, // 3:  Green
+  0x03, // 4:  Blue
+  0xFC, // 5:  Yellow
+  0xE3, // 6:  Magenta
+  0x1F, // 7:  Cyan
+  0x92, // 8:  Gray
+  0x6D, // 9:  Brown
+  0xB8, // 10: Orange
+  0x9F, // 11: Lime
+  0x13, // 12: Light Blue
+  0xA3, // 13: Purple
+  0xFD, // 14: Pink
+  0xB6  // 15: Beige
+};</pre>
+
+    <h3>3.3 Sprites</h3>
+    <table>
+      <tr><th>Item</th><th>Specification</th></tr>
+      <tr><td>Sprite Count</td><td>64 sprites</td></tr>
+      <tr><td>Sprite Size</td><td>16x16 pixels (fixed)</td></tr>
+      <tr><td>Attribute Table</td><td>0xD100-0xD1FF (4 bytes/sprite)</td></tr>
+      <tr><td>Tile Data</td><td>0x2000-0x5FFF (256 tiles)</td></tr>
+      <tr><td>Tile Size</td><td>256 bytes/tile (16x16)</td></tr>
+    </table>
+
+    <h4>Sprite Attributes (4-byte structure)</h4>
+    <table>
+      <tr><th>Offset</th><th>Name</th><th>Description</th></tr>
+      <tr><td>+0</td><td>X coordinate</td><td>0-255 (X position on screen)</td></tr>
+      <tr><td>+1</td><td>Y coordinate</td><td>0-255 (Y position on screen)</td></tr>
+      <tr><td>+2</td><td>Tile number</td><td>0-255 (tile index to display)</td></tr>
+      <tr><td>+3</td><td>Flags</td><td>bit0=enable, bit1=flip X, bit2=flip Y</td></tr>
+    </table>
+
+    <h4>Sprite Rendering Algorithm</h4>
+    <pre>for (int sprite_id = 0; sprite_id < 64; sprite_id++) {
+  uint8_t x = sprite_attr[sprite_id * 4 + 0];
+  uint8_t y = sprite_attr[sprite_id * 4 + 1];
+  uint8_t tile = sprite_attr[sprite_id * 4 + 2];
+  uint8_t flags = sprite_attr[sprite_id * 4 + 3];
+  
+  if (!(flags & 0x01)) continue; // Skip if disabled
+  
+  bool flip_x = flags & 0x02;
+  bool flip_y = flags & 0x04;
+  
+  uint8_t* tile_data = &sprite_tiles[tile * 256];
+  
+  for (int sy = 0; sy < 16; sy++) {
+    for (int sx = 0; sx < 16; sx++) {
+      uint8_t color_idx = tile_data[sy * 16 + sx];
+      if (color_idx == 0) continue; // Transparent
+      
+      int px = x + (flip_x ? (15 - sx) : sx);
+      int py = y + (flip_y ? (15 - sy) : sy);
+      
+      if (px >= 0 && px < 256 && py >= 0 && py < 256) {
+        framebuffer[py * 256 + px] = palette[color_idx];
+      }
+    }
+  }
+}</pre>
 
     <h2>4. MIDI Sound Specifications</h2>
 
-    <div class="spec-box">
-      <strong style="color: #0f0;">MIDI Advantages:</strong>
-      <ul style="margin: 10px 0;">
-        <li>Standard MIDI sound source (GM/GS/XG) support with diverse timbres</li>
-        <li>16 channels of simultaneous sound</li>
-        <li>Portamento, pitch bend, modulation support</li>
-        <li>Effects (reverb, chorus) available</li>
-      </ul>
+    <h3>4.1 MIDI Register Map</h3>
+    <table>
+      <tr><th>Address</th><th>Name</th><th>R/W</th><th>Description</th></tr>
+      <tr><td>0xD200</td><td>MIDI_CMD</td><td>W</td><td>MIDI status byte (0x80-0xFF)</td></tr>
+      <tr><td>0xD201</td><td>MIDI_DATA1</td><td>W</td><td>Data byte 1 (0x00-0x7F)</td></tr>
+      <tr><td>0xD202</td><td>MIDI_DATA2</td><td>W</td><td>Data byte 2 (0x00-0x7F)</td></tr>
+      <tr><td>0xD203</td><td>MIDI_SEND</td><td>W</td><td>Write to send MIDI message</td></tr>
+      <tr><td>0xD204-0xD213</td><td>CH_PROGRAM[0-15]</td><td>W</td><td>Channel program (0-127)</td></tr>
+      <tr><td>0xD214-0xD223</td><td>CH_VOLUME[0-15]</td><td>W</td><td>Channel volume (0-127)</td></tr>
+      <tr><td>0xD224-0xD233</td><td>CH_PAN[0-15]</td><td>W</td><td>Channel pan (0-127, 64=center)</td></tr>
+    </table>
+
+    <h3>4.2 MIDI Message Format</h3>
+    <table>
+      <tr><th>Message</th><th>Status</th><th>Data 1</th><th>Data 2</th><th>Description</th></tr>
+      <tr><td>Note Off</td><td>0x80-0x8F</td><td>Note number</td><td>Velocity</td><td>Stop note</td></tr>
+      <tr><td>Note On</td><td>0x90-0x9F</td><td>Note number</td><td>Velocity</td><td>Start note</td></tr>
+      <tr><td>Poly Aftertouch</td><td>0xA0-0xAF</td><td>Note number</td><td>Pressure</td><td>Key pressure</td></tr>
+      <tr><td>Control Change</td><td>0xB0-0xBF</td><td>CC number</td><td>Value</td><td>Control change</td></tr>
+      <tr><td>Program Change</td><td>0xC0-0xCF</td><td>Program number</td><td>-</td><td>Change instrument</td></tr>
+      <tr><td>Channel Aftertouch</td><td>0xD0-0xDF</td><td>Pressure</td><td>-</td><td>Channel pressure</td></tr>
+      <tr><td>Pitch Bend</td><td>0xE0-0xEF</td><td>LSB</td><td>MSB</td><td>Pitch bend</td></tr>
+    </table>
+
+    <div class="note">
+      <strong>Channel Number Calculation:</strong><br>
+      Lower 4 bits of status byte = channel number (0-15)<br>
+      Example: 0x90 = Channel 1 Note On, 0x9F = Channel 16 Note On
     </div>
 
-    <h3>4.1 MIDI Register Map</h3>
-    <p><strong>Base Address:</strong> 0xD200-0xD2FF</p>
+    <h3>4.3 MIDI Sending Procedure</h3>
+    <pre>// Note On: Channel 1, C4(60), velocity 100
+memory[0xD200] = 0x90;  // Note On, Ch1
+memory[0xD201] = 60;    // Note number
+memory[0xD202] = 100;   // Velocity
+memory[0xD203] = 0x00;  // Trigger send
 
+// Note Off: Channel 1, C4(60)
+memory[0xD200] = 0x80;  // Note Off, Ch1
+memory[0xD201] = 60;    // Note number
+memory[0xD202] = 64;    // Release velocity
+memory[0xD203] = 0x00;  // Trigger send
+
+// Program Change: Channel 1 to program 1 (Piano)
+memory[0xD204] = 1;     // Direct write
+// or
+memory[0xD200] = 0xC0;  // Program Change, Ch1
+memory[0xD201] = 1;     // Program number
+memory[0xD203] = 0x00;  // Trigger send</pre>
+
+    <h3>4.4 MIDI Note Number Table</h3>
     <table>
-      <tr><th>Address</th><th>Content</th><th>Value Range</th></tr>
-      <tr><td>0xD200</td><td>MIDI command send</td><td>0x00-0xFF</td></tr>
-      <tr><td>0xD201</td><td>Data byte 1</td><td>0x00-0xFF</td></tr>
-      <tr><td>0xD202</td><td>Data byte 2</td><td>0x00-0xFF</td></tr>
-      <tr><td>0xD203</td><td>Execute trigger (write to send)</td><td>Any</td></tr>
-      <tr><td>0xD204-0xD213</td><td>Channel 1-16 program number</td><td>0-127 (GM timbre)</td></tr>
-      <tr><td>0xD214-0xD223</td><td>Channel 1-16 volume</td><td>0-127</td></tr>
-      <tr><td>0xD224-0xD233</td><td>Channel 1-16 pan</td><td>0-127 (64=center)</td></tr>
+      <tr><th>Note</th><th>Octave 2</th><th>Octave 3</th><th>Octave 4</th><th>Octave 5</th><th>Frequency(Hz)</th></tr>
+      <tr><td>C</td><td>36</td><td>48</td><td>60</td><td>72</td><td>261.63</td></tr>
+      <tr><td>C#/D♭</td><td>37</td><td>49</td><td>61</td><td>73</td><td>277.18</td></tr>
+      <tr><td>D</td><td>38</td><td>50</td><td>62</td><td>74</td><td>293.66</td></tr>
+      <tr><td>D#/E♭</td><td>39</td><td>51</td><td>63</td><td>75</td><td>311.13</td></tr>
+      <tr><td>E</td><td>40</td><td>52</td><td>64</td><td>76</td><td>329.63</td></tr>
+      <tr><td>F</td><td>41</td><td>53</td><td>65</td><td>77</td><td>349.23</td></tr>
+      <tr><td>F#/G♭</td><td>42</td><td>54</td><td>66</td><td>78</td><td>369.99</td></tr>
+      <tr><td>G</td><td>43</td><td>55</td><td>67</td><td>79</td><td>392.00</td></tr>
+      <tr><td>G#/A♭</td><td>44</td><td>56</td><td>68</td><td>80</td><td>415.30</td></tr>
+      <tr><td>A</td><td>45</td><td>57</td><td>69</td><td>81</td><td>440.00</td></tr>
+      <tr><td>A#/B♭</td><td>46</td><td>58</td><td>70</td><td>82</td><td>466.16</td></tr>
+      <tr><td>B</td><td>47</td><td>59</td><td>71</td><td>83</td><td>493.88</td></tr>
     </table>
 
-    <h3>4.2 Basic MIDI Operations</h3>
-
-    <h4>Play a Note (Note On)</h4>
-    <pre>; Channel 1, Note 60 (C4), Velocity 100
-LDA #$90        ; Note On (ch1 = 0x90)
-STA $D200
-LDA #60         ; Note number (C4)
-STA $D201
-LDA #100        ; Velocity (volume)
-STA $D202
-LDA #$00        ; Trigger
-STA $D203       ; Execute send</pre>
-
-    <h4>Stop a Note (Note Off)</h4>
-    <pre>; Channel 1, Stop Note 60
-LDA #$80        ; Note Off (ch1 = 0x80)
-STA $D200
-LDA #60         ; Note number
-STA $D201
-LDA #64         ; Release velocity
-STA $D202
-LDA #$00
-STA $D203</pre>
-
-    <h4>Change Instrument (Program Change)</h4>
-    <pre>; Change channel 1 to program 1 (Piano)
-LDA #1
-STA $D204       ; Write directly to ch1 program register</pre>
-
-    <h3>4.3 MIDI Note Number Table</h3>
-    <table>
-      <tr><th>Note</th><th>Octave 3</th><th>Octave 4</th><th>Octave 5</th></tr>
-      <tr><td>C</td><td>48</td><td>60</td><td>72</td></tr>
-      <tr><td>C#</td><td>49</td><td>61</td><td>73</td></tr>
-      <tr><td>D</td><td>50</td><td>62</td><td>74</td></tr>
-      <tr><td>D#</td><td>51</td><td>63</td><td>75</td></tr>
-      <tr><td>E</td><td>52</td><td>64</td><td>76</td></tr>
-      <tr><td>F</td><td>53</td><td>65</td><td>77</td></tr>
-      <tr><td>F#</td><td>54</td><td>66</td><td>78</td></tr>
-      <tr><td>G</td><td>55</td><td>67</td><td>79</td></tr>
-      <tr><td>G#</td><td>56</td><td>68</td><td>80</td></tr>
-      <tr><td>A</td><td>57</td><td>69</td><td>81</td></tr>
-      <tr><td>A#</td><td>58</td><td>70</td><td>82</td></tr>
-      <tr><td>B</td><td>59</td><td>71</td><td>83</td></tr>
-    </table>
-
-    <h3>4.4 General MIDI Instrument Table (Excerpt)</h3>
+    <h3>4.5 General MIDI Instrument Table (Excerpt)</h3>
     <table>
       <tr><th>Number</th><th>Instrument</th><th>Number</th><th>Instrument</th></tr>
-      <tr><td>0</td><td>Acoustic Grand Piano</td><td>40</td><td>Violin</td></tr>
-      <tr><td>1</td><td>Bright Acoustic Piano</td><td>56</td><td>Trumpet</td></tr>
-      <tr><td>4</td><td>Electric Piano</td><td>65</td><td>Soprano Sax</td></tr>
-      <tr><td>16</td><td>Drawbar Organ</td><td>73</td><td>Flute</td></tr>
-      <tr><td>24</td><td>Acoustic Guitar</td><td>80</td><td>Synth Lead</td></tr>
-      <tr><td>32</td><td>Acoustic Bass</td><td>127</td><td>Gunshot (SFX)</td></tr>
+      <tr><td>0</td><td>Acoustic Grand Piano</td><td>32</td><td>Acoustic Bass</td></tr>
+      <tr><td>1</td><td>Bright Acoustic Piano</td><td>33</td><td>Electric Bass (finger)</td></tr>
+      <tr><td>4</td><td>Electric Piano 1</td><td>40</td><td>Violin</td></tr>
+      <tr><td>5</td><td>Electric Piano 2</td><td>56</td><td>Trumpet</td></tr>
+      <tr><td>16</td><td>Drawbar Organ</td><td>65</td><td>Soprano Sax</td></tr>
+      <tr><td>24</td><td>Acoustic Guitar (nylon)</td><td>73</td><td>Flute</td></tr>
+      <tr><td>25</td><td>Acoustic Guitar (steel)</td><td>80</td><td>Lead 1 (square)</td></tr>
     </table>
-
-    <div class="info">
-      <strong>Channel 10 Special Use:</strong> In MIDI standard, channel 10 is dedicated to drums.
-      Note numbers map to percussion instruments (e.g., 36=Bass Drum, 38=Snare, 42=Hi-Hat)
-    </div>
 
     <h2>5. Input Specifications</h2>
 
-    <h3>5.1 Controller</h3>
-    <p><strong>I/O Address:</strong> 0xD300-0xD301</p>
-
+    <h3>5.1 Controller Input</h3>
     <table>
-      <tr><th>Address</th><th>Content</th></tr>
-      <tr><td>0xD300</td><td>Controller 1 state</td></tr>
-      <tr><td>0xD301</td><td>Controller 2 state</td></tr>
+      <tr><th>Address</th><th>Name</th><th>R/W</th><th>Description</th></tr>
+      <tr><td>0xD300</td><td>CONTROLLER1</td><td>R</td><td>Controller 1 button states</td></tr>
+      <tr><td>0xD301</td><td>CONTROLLER2</td><td>R</td><td>Controller 2 button states</td></tr>
     </table>
 
-    <h4>Button Layout (8-bit)</h4>
+    <h4>Button Bit Layout</h4>
     <table>
-      <tr><th>Bit</th><th>Button</th></tr>
-      <tr><td>bit 0</td><td>Up</td></tr>
-      <tr><td>bit 1</td><td>Down</td></tr>
-      <tr><td>bit 2</td><td>Left</td></tr>
-      <tr><td>bit 3</td><td>Right</td></tr>
-      <tr><td>bit 4</td><td>A Button</td></tr>
-      <tr><td>bit 5</td><td>B Button</td></tr>
-      <tr><td>bit 6</td><td>START</td></tr>
-      <tr><td>bit 7</td><td>SELECT</td></tr>
+      <tr><th>Bit</th><th>Button</th><th>Value</th></tr>
+      <tr><td>bit 0</td><td>Up</td><td>0x01</td></tr>
+      <tr><td>bit 1</td><td>Down</td><td>0x02</td></tr>
+      <tr><td>bit 2</td><td>Left</td><td>0x04</td></tr>
+      <tr><td>bit 3</td><td>Right</td><td>0x08</td></tr>
+      <tr><td>bit 4</td><td>A</td><td>0x10</td></tr>
+      <tr><td>bit 5</td><td>B</td><td>0x20</td></tr>
+      <tr><td>bit 6</td><td>START</td><td>0x40</td></tr>
+      <tr><td>bit 7</td><td>SELECT</td><td>0x80</td></tr>
     </table>
+
+    <h4>Button Detection Example</h4>
+    <pre>uint8_t input = memory[0xD300];
+bool up_pressed = input & 0x01;
+bool a_pressed = input & 0x10;
+bool start_pressed = input & 0x40;</pre>
 
     <h3>5.2 Other I/O Registers</h3>
     <table>
-      <tr><th>Address</th><th>Content</th><th>Read/Write</th></tr>
-      <tr><td>0xD302</td><td>Random number (0-255)</td><td>Read-only</td></tr>
-      <tr><td>0xD303</td><td>Frame counter (low byte)</td><td>Read-only</td></tr>
-      <tr><td>0xD304</td><td>Frame counter (high byte)</td><td>Read-only</td></tr>
+      <tr><th>Address</th><th>Name</th><th>R/W</th><th>Description</th></tr>
+      <tr><td>0xD302</td><td>RANDOM</td><td>R</td><td>Random value (0-255), updated on each read</td></tr>
+      <tr><td>0xD303</td><td>FRAME_LOW</td><td>R</td><td>Frame counter low 8 bits</td></tr>
+      <tr><td>0xD304</td><td>FRAME_HIGH</td><td>R</td><td>Frame counter high 8 bits</td></tr>
     </table>
 
     <h2>6. Sample Programs</h2>
 
-    <h3>6.1 Play a Scale</h3>
+    <h3>6.1 Screen Fill</h3>
+    <pre>; Fill screen with red (palette #2)
+
+E000: A9 02     LDA #$02      ; A = 2 (red)
+E002: A2 00     LDX #$00      ; X = 0
+E004: A0 00     LDY #$00      ; Y = 0
+
+; Outer loop (Y = 0-255)
+E006: A9 02     LDA #$02      ; A = 2
+E008: 8D 00 80  STA $8000     ; VRAM[0x8000] = 2
+E00B: E8        INX           ; X++
+E00C: D0 F8     BNE $E006     ; If X != 0 goto E006
+E00E: C8        INY           ; Y++
+E00F: D0 F5     BNE $E006     ; If Y != 0 goto E006
+
+E011: 00        BRK           ; Halt</pre>
+
+    <h3>6.2 Play Scale</h3>
     <pre>; Play notes from C4 to C5 in sequence
 
-      LDX #60       ; Note number = 60 (C4)
-LOOP:
-      LDA #$90      ; Note On, ch1
-      STA $D200
-      
-      STX $D201     ; Note number
-      
-      LDA #100      ; Velocity
-      STA $D202
-      
-      LDA #$00      ; Execute send
-      STA $D203
-      
-      ; Wait 60 frames (1 second)
-      LDY #60
-WAIT:
-      LDA $D303     ; Monitor frame counter
-      CMP $D303
-      BEQ WAIT
-      INY
-      CPY #60
-      BNE WAIT
-      
-      ; Note Off
-      LDA #$80
-      STA $D200
-      STX $D201
-      LDA #64
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      INX           ; Next note
-      CPX #73       ; Until C5?
-      BNE LOOP
-      
-      HLT</pre>
+E000: A2 3C     LDX #$3C      ; X = 60 (C4)
 
-    <h3>6.2 Play a Chord</h3>
-    <pre>; Play C-E-G triad (C major)
+; Loop start
+E002: A9 90     LDA #$90      ; Note On, Ch1
+E004: 8D 00 D2  STA $D200
+E007: 8E 01 D2  STX $D201     ; Note number
+E00A: A9 64     LDA #$64      ; Velocity 100
+E00C: 8D 02 D2  STA $D202
+E00F: A9 00     LDA #$00
+E011: 8D 03 D2  STA $D203     ; Send
 
-      ; C4 (60)
-      LDA #$90
-      STA $D200
-      LDA #60
-      STA $D201
-      LDA #100
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      ; E4 (64)
-      LDA #$90
-      STA $D200
-      LDA #64
-      STA $D201
-      LDA #100
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      ; G4 (67)
-      LDA #$90
-      STA $D200
-      LDA #67
-      STA $D201
-      LDA #100
-      STA $D202
-      LDA #$00
-      STA $D203
-      
-      ; Wait 2 seconds then stop...
-      HLT</pre>
+; Wait 60 frames (simplified)
+E014: A0 3C     LDY #$3C      ; Y = 60
+E016: 88        DEY           ; Y--
+E017: D0 FD     BNE $E016     ; If Y != 0 goto E016
 
-    <h2>7. Memory Layout</h2>
+; Note Off
+E019: A9 80     LDA #$80      ; Note Off, Ch1
+E01B: 8D 00 D2  STA $D200
+E01E: 8E 01 D2  STX $D201
+E021: A9 40     LDA #$40
+E023: 8D 02 D2  STA $D202
+E026: A9 00     LDA #$00
+E028: 8D 03 D2  STA $D203
 
-    <pre>Complete Memory Map (64KB):
+E02B: E8        INX           ; Next note
+E02C: E0 49     CPX #$49      ; X == 73 (C5)?
+E02E: D0 D2     BNE $E002     ; Continue if not
 
-0x0000 ┌─────────────────┐
-       │ Zero Page RAM   │ 256B  Fast access variables
-0x0100 ├─────────────────┤
-       │ Stack           │ 256B  Subroutines
-0x0200 ├─────────────────┤
-       │ General RAM     │ 31.5KB Program data/work
-0x2000 ├─────────────────┤
-       │ Sprite Tiles    │ 16KB  256 tiles of 16x16
-0x6000 ├─────────────────┤
-       │ General RAM     │ 8KB
-0x8000 ├─────────────────┤
-       │ VRAM (BG)       │ 64KB  256x256 pixels
-       │                 │       (0x8000-0xFFFF)
-0xD000 ├─ ─ ─ ─ ─ ─ ─ ─ ┤ ※Overlaps with VRAM
-       │ Palette         │ 256B  256 colors RGB332
-0xD100 ├─ ─ ─ ─ ─ ─ ─ ─ ┤
-       │ Sprite Attrs    │ 256B  64 sprites x 4 bytes
-0xD200 ├─ ─ ─ ─ ─ ─ ─ ─ ┤
-       │ MIDI Registers  │ 256B  MIDI control
-0xD300 ├─ ─ ─ ─ ─ ─ ─ ─ ┤
-       │ I/O Registers   │ 256B  Input/other
-0xD400 ├─────────────────┤
-       │ VRAM continued  │
-0xE000 ├─────────────────┤
-       │ ROM             │ 8KB   Program code
-0xFFFF └─────────────────┘</pre>
-
-    <h2>8. Reduction Summary</h2>
-
-    <table>
-      <tr><th>Item</th><th>Old Spec</th><th>New Spec</th></tr>
-      <tr><td>Instructions</td><td>70+</td><td><strong>25</strong></td></tr>
-      <tr><td>Registers</td><td>A,B,C,D,X,Y,SP,PC,F</td><td><strong>A,X,Y,SP,PC,F</strong></td></tr>
-      <tr><td>Flags</td><td>Z,C,N,V</td><td><strong>Z,C,N</strong> (V flag removed)</td></tr>
-      <tr><td>Sound</td><td>4ch square wave</td><td><strong>MIDI 16ch</strong></td></tr>
-      <tr><td>Sound Registers</td><td>8 bytes x 4ch</td><td><strong>Simple MIDI control</strong></td></tr>
-    </table>
-
-    <h2>9. Advantages</h2>
-
-    <h3>9.1 Implementation Ease</h3>
-    <ul>
-      <li>25 instruction set reduces implementation time to 1/3</li>
-      <li>Reduced registers simplify debugging</li>
-      <li>Easy to create an assembler</li>
-    </ul>
-
-    <h3>9.2 Learning Ease</h3>
-    <ul>
-      <li>Fewer instructions to memorize (25)</li>
-      <li>6502-style simple design</li>
-      <li>Beginners can learn in a few hours</li>
-    </ul>
-
-    <h3>9.3 Enhanced Musical Expression</h3>
-    <ul>
-      <li>128 MIDI timbres available</li>
-      <li>16 channels of simultaneous sound</li>
-      <li>Professional music with piano, strings, drums, etc.</li>
-      <li>Integration with existing MIDI sequencers</li>
-    </ul>
-
-    <div class="important">
-      <strong>Trade-off:</strong> Instruction reduction requires combining multiple instructions for some operations,
-      but the simplicity and reduced learning cost provide overwhelming advantages.
-    </div>
+E030: 00        BRK           ; Halt</pre>
 
     <div style="margin-top: 50px; padding: 25px; background: #0a0a0a; border: 2px solid #0f0; text-align: center;">
-      <h3 style="color: #0f0; margin-top: 0;">XVM-16 Lite + MIDI Specification v2.0</h3>
+      <h3 style="color: #0f0; margin-top: 0;">XVM-16 Lite Complete Specification v1.0</h3>
       <p style="color: #888; margin: 10px 0;">
         256x256 resolution | 256 colors | MIDI 16ch | 64 sprites<br>
-        25 instruction set | Simple design | Education & game development
+        25 instruction set | Full emulator implementation support
       </p>
       <p style="color: #0ff; font-size: 12px; margin-top: 15px;">
         CC0 Public Domain - Free to use, modify, and distribute
