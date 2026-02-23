@@ -1,1013 +1,1055 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <title>XVM-16 Lite 完全版仕様書（MIDI対応）</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root {
-      color-scheme: light dark;
-    }
-    @font-face {
-        font-family: "Renner";
-        src: url("./Renner.ttf") format("truetype");
-        font-display: swap;
-      }
-    body {
-      background: #000;
-      font-family: "Renner",sans-serif;
-      margin: 0;
-      padding: 20px;
-      color: #fff;
-      line-height: 1.6;
-    }
-    h1 {
-      font-size: 32px;
-      font-weight: 300;
-      border-bottom: 2px solid #0f0;
-      padding-bottom: 10px;
-    }
-    h2 {
-      font-size: 24px;
-      font-weight: 400;
-      color: #0ff;
-      margin-top: 40px;
-    }
-    h3 {
-      font-size: 20px;
-      font-weight: 400;
-      color: #ff0;
-      margin-top: 30px;
-    }
-    h4 {
-      font-size: 16px;
-      font-weight: 500;
-      color: #f0f;
-      margin-top: 20px;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 15px 0;
-      font-size: 13px;
-    }
-    th, td {
-      border: 1px solid #444;
-      padding: 8px 12px;
-      text-align: left;
-    }
-    th {
-      background: #1a1a1a;
-      font-weight: 500;
-    }
-    code {
-      background: #1a1a1a;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-      color: #0f0;
-    }
-    pre {
-      background: #0f0f0f;
-      border: 1px solid #333;
-      padding: 15px;
-      overflow-x: auto;
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .note {
-      background: #1a1a00;
-      border-left: 4px solid #ff0;
-      padding: 12px 15px;
-      margin: 15px 0;
-    }
-    .important {
-      background: #1a0000;
-      border-left: 4px solid #f00;
-      padding: 12px 15px;
-      margin: 15px 0;
-    }
-    .info {
-      background: #001a1a;
-      border-left: 4px solid #0ff;
-      padding: 12px 15px;
-      margin: 15px 0;
-    }
-    .spec-box {
-      background: #0a0a0a;
-      border: 2px solid #0f0;
-      padding: 20px;
-      margin: 20px 0;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RETRO-8 仕様書 v1.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap');
+
+  :root {
+    --bg: #0a0c10;
+    --panel: #0f1318;
+    --border: #1e2a38;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #a8ff3e;
+    --text: #c8d8e8;
+    --dim: #4a6070;
+    --header-h: 72px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* スキャンライン */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ヘッダー */
+  header {
+    background: linear-gradient(135deg, #060810 0%, #101828 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 0 40px;
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 0 40px rgba(0,229,255,0.15);
+  }
+
+  .logo {
+    font-size: 28px;
+    font-weight: 900;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent), 0 0 60px rgba(0,229,255,0.4);
+    animation: flicker 6s infinite;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  @keyframes flicker {
+    0%,96%,100% { opacity: 1; }
+    97% { opacity: 0.85; }
+    98% { opacity: 1; }
+    99% { opacity: 0.9; }
+  }
+
+  .version-badge {
+    background: var(--accent2);
+    color: #000;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  /* メインレイアウト */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* セクション共通 */
+  section {
+    margin-bottom: 48px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    position: relative;
+    overflow: hidden;
+  }
+
+  section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .sec-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,229,255,0.04);
+  }
+
+  .sec-num {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    background: rgba(0,229,255,0.1);
+    padding: 2px 8px;
+    border: 1px solid rgba(0,229,255,0.3);
+  }
+
+  .sec-title {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.05em;
+  }
+
+  .sec-body {
+    padding: 24px;
+  }
+
+  /* スペックグリッド */
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+  }
+
+  .spec-card {
+    border: 1px solid var(--border);
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .spec-card:hover {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.05);
+  }
+
+  .spec-label {
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .spec-value {
+    font-size: 22px;
+    color: var(--accent);
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0,229,255,0.5);
+  }
+
+  .spec-unit {
+    font-size: 12px;
+    color: var(--dim);
+    margin-left: 4px;
+  }
+
+  .spec-sub {
+    font-size: 11px;
+    color: var(--dim);
+    margin-top: 4px;
+  }
+
+  /* メモリマップ */
+  .memmap {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .memmap th {
+    background: rgba(0,229,255,0.08);
+    color: var(--accent);
+    padding: 8px 14px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .memmap td {
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(30,42,56,0.5);
+    vertical-align: top;
+  }
+
+  .memmap tr:hover td { background: rgba(0,229,255,0.03); }
+
+  .addr { color: var(--accent3); font-weight: 700; letter-spacing: 0.05em; }
+  .size-badge {
+    display: inline-block;
+    background: rgba(255,107,53,0.15);
+    color: var(--accent2);
+    border: 1px solid rgba(255,107,53,0.3);
+    padding: 1px 7px;
+    font-size: 11px;
+  }
+
+  /* レジスタ表 */
+  .reg-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .reg-table th {
+    background: rgba(168,255,62,0.07);
+    color: var(--accent3);
+    padding: 8px 14px;
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .reg-table td {
+    padding: 7px 14px;
+    border-bottom: 1px solid rgba(30,42,56,0.4);
+  }
+
+  .reg-table tr:hover td { background: rgba(168,255,62,0.03); }
+
+  .raddr { color: var(--accent2); font-weight: 700; }
+  .rname { color: var(--accent3); }
+  .rbits { color: var(--dim); font-size: 12px; }
+
+  /* 命令テーブル */
+  .inst-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 8px;
+  }
+
+  .inst-row {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+
+  .inst-row:hover { border-color: var(--accent2); }
+
+  .inst-mn {
+    background: rgba(255,107,53,0.1);
+    color: var(--accent2);
+    padding: 7px 12px;
+    font-weight: 700;
+    min-width: 100px;
+    font-size: 13px;
+    border-right: 1px solid var(--border);
+    letter-spacing: 0.05em;
+  }
+
+  .inst-desc {
+    padding: 7px 12px;
+    color: var(--text);
+    font-size: 12px;
+    flex: 1;
+  }
+
+  .inst-op {
+    color: var(--dim);
+    font-size: 11px;
+    padding: 7px 10px;
+    background: rgba(0,0,0,0.2);
+    border-left: 1px solid var(--border);
+    min-width: 50px;
+    text-align: center;
+  }
+
+  /* タグ */
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    letter-spacing: 0.1em;
+    margin-right: 6px;
+    margin-bottom: 4px;
+  }
+  .tag-cpu { background: rgba(0,229,255,0.12); color: var(--accent); border: 1px solid rgba(0,229,255,0.3); }
+  .tag-gfx { background: rgba(168,255,62,0.12); color: var(--accent3); border: 1px solid rgba(168,255,62,0.3); }
+  .tag-snd { background: rgba(255,107,53,0.12); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+  .tag-io  { background: rgba(180,130,255,0.12); color: #c8a0ff; border: 1px solid rgba(180,130,255,0.3); }
+
+  /* プロ tips */
+  .tip-box {
+    border-left: 3px solid var(--accent3);
+    background: rgba(168,255,62,0.04);
+    padding: 12px 16px;
+    margin-top: 16px;
+    font-size: 12px;
+    color: #8ab060;
+  }
+
+  .tip-box strong { color: var(--accent3); }
+
+  /* パレット */
+  .palette-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 0;
+  }
+
+  .pal-swatch {
+    width: 40px; height: 40px;
+    position: relative;
+    cursor: default;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .pal-swatch:hover::after {
+    content: attr(data-hex);
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 4px;
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  .pal-idx {
+    position: absolute;
+    top: 2px; left: 3px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.6);
+    text-shadow: 0 0 3px #000;
+  }
+
+  /* フッター */
+  footer {
+    text-align: center;
+    padding: 30px;
+    border-top: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 12px;
+  }
+
+  /* 目次 */
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 20px 24px;
+  }
+
+  .toc a {
+    color: var(--dim);
+    text-decoration: none;
+    font-size: 12px;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .toc a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.05);
+  }
+
+  h3 { color: #fff; font-family: 'Zen Kaku Gothic New', sans-serif; margin: 20px 0 10px; font-size: 15px; }
+  p { color: var(--text); margin-bottom: 10px; }
+  code {
+    background: rgba(0,229,255,0.08);
+    color: var(--accent);
+    padding: 1px 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    border: 1px solid rgba(0,229,255,0.2);
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 20px 0;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media(max-width:700px) { .two-col { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>XVM-16 Lite 完全版仕様書（MIDI対応）</h1>
-    <p style="color: #888;">エミュレーター実装用完全仕様 - 25命令 + MIDI音源</p>
 
-    <div class="spec-box">
-      <strong style="color: #0f0;">この仕様書について:</strong><br>
-      この文書は、XVM-16 Liteバーチャルマシンのエミュレーターを実装するために必要な全ての情報を含みます。
-      命令セットは25個に絞り、学習と実装を容易にしながら、実用的なゲーム開発が可能な設計です。
-    </div>
-
-    <h2>1. ハードウェア仕様</h2>
-    
-    <h3>1.1 CPU仕様</h3>
-    <table>
-      <tr><th>項目</th><th>仕様</th></tr>
-      <tr><td>ビット幅</td><td>8bit CPU</td></tr>
-      <tr><td>アドレス空間</td><td>16bit (64KB = 65,536バイト)</td></tr>
-      <tr><td>クロック速度</td><td>4MHz (4,000,000 Hz)</td></tr>
-      <tr><td>リフレッシュレート</td><td>60Hz (1秒間に60フレーム)</td></tr>
-      <tr><td>1フレームのサイクル数</td><td>66,667 cycles (4,000,000 ÷ 60)</td></tr>
-      <tr><td>エンディアン</td><td>リトルエンディアン（下位バイトが先）</td></tr>
-    </table>
-
-    <h3>1.2 レジスタ</h3>
-    <table>
-      <tr><th>名前</th><th>サイズ</th><th>初期値</th><th>説明</th></tr>
-      <tr><td><code>A</code></td><td>8bit</td><td>0x00</td><td>アキュムレータ。算術演算の結果格納先</td></tr>
-      <tr><td><code>X</code></td><td>8bit</td><td>0x00</td><td>Xインデックスレジスタ。配列アクセス等に使用</td></tr>
-      <tr><td><code>Y</code></td><td>8bit</td><td>0x00</td><td>Yインデックスレジスタ。配列アクセス等に使用</td></tr>
-      <tr><td><code>SP</code></td><td>16bit</td><td>0x01FF</td><td>スタックポインタ。下位方向に成長（デクリメント）</td></tr>
-      <tr><td><code>PC</code></td><td>16bit</td><td>0xE000</td><td>プログラムカウンタ。次に実行する命令のアドレス</td></tr>
-      <tr><td><code>F</code></td><td>8bit</td><td>0x00</td><td>フラグレジスタ。演算結果の状態を保持</td></tr>
-    </table>
-
-    <h4>フラグレジスタ (F) の詳細</h4>
-    <table>
-      <tr><th>ビット</th><th>名前</th><th>説明</th><th>セット条件</th></tr>
-      <tr><td>bit 0</td><td>Z (Zero)</td><td>ゼロフラグ</td><td>演算結果が0x00のとき1</td></tr>
-      <tr><td>bit 1</td><td>C (Carry)</td><td>キャリーフラグ</td><td>加算で桁上がり、または減算で借入なしのとき1</td></tr>
-      <tr><td>bit 2</td><td>N (Negative)</td><td>ネガティブフラグ</td><td>演算結果のbit7が1のとき1（符号付き負数）</td></tr>
-      <tr><td>bit 3-7</td><td>-</td><td>未使用</td><td>常に0</td></tr>
-    </table>
-
-    <h3>1.3 メモリマップ</h3>
-    <table>
-      <tr><th>開始</th><th>終了</th><th>サイズ</th><th>名称</th><th>用途</th><th>読み</th><th>書き</th></tr>
-      <tr><td>0x0000</td><td>0x00FF</td><td>256B</td><td>ゼロページRAM</td><td>高速アクセス変数領域</td><td>○</td><td>○</td></tr>
-      <tr><td>0x0100</td><td>0x01FF</td><td>256B</td><td>スタック</td><td>サブルーチン呼び出し用</td><td>○</td><td>○</td></tr>
-      <tr><td>0x0200</td><td>0x1FFF</td><td>7.5KB</td><td>汎用RAM</td><td>プログラムワーク領域</td><td>○</td><td>○</td></tr>
-      <tr><td>0x2000</td><td>0x5FFF</td><td>16KB</td><td>スプライトタイル</td><td>256個の16x16タイル</td><td>○</td><td>○</td></tr>
-      <tr><td>0x6000</td><td>0x7FFF</td><td>8KB</td><td>汎用RAM</td><td>追加ワーク領域</td><td>○</td><td>○</td></tr>
-      <tr><td>0x8000</td><td>0xFFFF</td><td>32KB</td><td>VRAM</td><td>256x256ピクセルデータ</td><td>○</td><td>○</td></tr>
-      <tr><td>0xD000</td><td>0xD0FF</td><td>256B</td><td>パレット</td><td>256色RGB332</td><td>○</td><td>○</td></tr>
-      <tr><td>0xD100</td><td>0xD1FF</td><td>256B</td><td>スプライト属性</td><td>64個x4バイト</td><td>○</td><td>○</td></tr>
-      <tr><td>0xD200</td><td>0xD2FF</td><td>256B</td><td>MIDI</td><td>MIDI制御レジスタ</td><td>○</td><td>○</td></tr>
-      <tr><td>0xD300</td><td>0xD3FF</td><td>256B</td><td>I/O</td><td>入力・その他</td><td>○</td><td>△</td></tr>
-      <tr><td>0xE000</td><td>0xFFFF</td><td>8KB</td><td>ROM</td><td>プログラムコード</td><td>○</td><td>×</td></tr>
-    </table>
-
-    <div class="important">
-      <strong>メモリ重複について:</strong><br>
-      0xD000-0xDFFF領域はVRAM空間(0x8000-0xFFFF)と物理的に重複します。<br>
-      - 読み取り時: I/Oレジスタ/パレット/スプライト属性の値を返す<br>
-      - 書き込み時: I/Oレジスタ/パレット/スプライト属性とVRAMの両方に書き込む
-    </div>
-
-    <h2>2. 命令セット（全25命令）</h2>
-
-    <div class="spec-box">
-      <strong>命令フォーマット:</strong><br>
-      各命令は1～3バイトで構成されます。<br>
-      - オペコード（1バイト）: 命令の種類<br>
-      - オペランド（0～2バイト）: 即値データまたはアドレス<br>
-      リトルエンディアン: 16bitアドレスは下位バイト→上位バイトの順
-    </div>
-
-    <h3>2.1 データ転送命令（6命令）</h3>
-    <table>
-      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>フラグ</th></tr>
-      <tr><td>LDA #nn</td><td>0xA9</td><td>2</td><td>2</td><td>A ← nn（即値）</td><td>Z,N</td></tr>
-      <tr><td>LDA addr</td><td>0xAD</td><td>3</td><td>4</td><td>A ← [addr]（絶対）</td><td>Z,N</td></tr>
-      <tr><td>LDA zp</td><td>0xA5</td><td>2</td><td>3</td><td>A ← [0x00zp]（ゼロページ）</td><td>Z,N</td></tr>
-      <tr><td>LDA addr,X</td><td>0xBD</td><td>3</td><td>4</td><td>A ← [addr+X]（インデックス）</td><td>Z,N</td></tr>
-      <tr><td>LDX #nn</td><td>0xA2</td><td>2</td><td>2</td><td>X ← nn（即値）</td><td>Z,N</td></tr>
-      <tr><td>LDX addr</td><td>0xAE</td><td>3</td><td>4</td><td>X ← [addr]（絶対）</td><td>Z,N</td></tr>
-      <tr><td>LDX zp</td><td>0xA6</td><td>2</td><td>3</td><td>X ← [0x00zp]（ゼロページ）</td><td>Z,N</td></tr>
-      <tr><td>LDY #nn</td><td>0xA0</td><td>2</td><td>2</td><td>Y ← nn（即値）</td><td>Z,N</td></tr>
-      <tr><td>LDY addr</td><td>0xAC</td><td>3</td><td>4</td><td>Y ← [addr]（絶対）</td><td>Z,N</td></tr>
-      <tr><td>LDY zp</td><td>0xA4</td><td>2</td><td>3</td><td>Y ← [0x00zp]（ゼロページ）</td><td>Z,N</td></tr>
-      <tr><td>STA addr</td><td>0x8D</td><td>3</td><td>4</td><td>[addr] ← A（絶対）</td><td>-</td></tr>
-      <tr><td>STA zp</td><td>0x85</td><td>2</td><td>3</td><td>[0x00zp] ← A（ゼロページ）</td><td>-</td></tr>
-      <tr><td>STA addr,X</td><td>0x9D</td><td>3</td><td>5</td><td>[addr+X] ← A（インデックス）</td><td>-</td></tr>
-      <tr><td>STX addr</td><td>0x8E</td><td>3</td><td>4</td><td>[addr] ← X（絶対）</td><td>-</td></tr>
-      <tr><td>STX zp</td><td>0x86</td><td>2</td><td>3</td><td>[0x00zp] ← X（ゼロページ）</td><td>-</td></tr>
-      <tr><td>STY addr</td><td>0x8C</td><td>3</td><td>4</td><td>[addr] ← Y（絶対）</td><td>-</td></tr>
-      <tr><td>STY zp</td><td>0x84</td><td>2</td><td>3</td><td>[0x00zp] ← Y（ゼロページ）</td><td>-</td></tr>
-    </table>
-
-    <div class="note">
-      <strong>実装上の注意:</strong><br>
-      - zpは8bitアドレス。実際のアドレスは0x0000～0x00FFの範囲<br>
-      - addrは16bitアドレス。リトルエンディアンで格納（下位→上位）<br>
-      - インデックスモードでのオーバーフロー: (addr + X) & 0xFFFF
-    </div>
-
-    <h3>2.2 演算命令（5命令）</h3>
-    <table>
-      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>フラグ</th></tr>
-      <tr><td>ADC #nn</td><td>0x69</td><td>2</td><td>2</td><td>A ← A + nn + C</td><td>Z,C,N</td></tr>
-      <tr><td>ADC addr</td><td>0x6D</td><td>3</td><td>4</td><td>A ← A + [addr] + C</td><td>Z,C,N</td></tr>
-      <tr><td>ADC zp</td><td>0x65</td><td>2</td><td>3</td><td>A ← A + [zp] + C</td><td>Z,C,N</td></tr>
-      <tr><td>SBC #nn</td><td>0xE9</td><td>2</td><td>2</td><td>A ← A - nn - (1-C)</td><td>Z,C,N</td></tr>
-      <tr><td>SBC addr</td><td>0xED</td><td>3</td><td>4</td><td>A ← A - [addr] - (1-C)</td><td>Z,C,N</td></tr>
-      <tr><td>SBC zp</td><td>0xE5</td><td>2</td><td>3</td><td>A ← A - [zp] - (1-C)</td><td>Z,C,N</td></tr>
-      <tr><td>AND #nn</td><td>0x29</td><td>2</td><td>2</td><td>A ← A & nn</td><td>Z,N</td></tr>
-      <tr><td>AND addr</td><td>0x2D</td><td>3</td><td>4</td><td>A ← A & [addr]</td><td>Z,N</td></tr>
-      <tr><td>AND zp</td><td>0x25</td><td>2</td><td>3</td><td>A ← A & [zp]</td><td>Z,N</td></tr>
-      <tr><td>ORA #nn</td><td>0x09</td><td>2</td><td>2</td><td>A ← A | nn</td><td>Z,N</td></tr>
-      <tr><td>ORA addr</td><td>0x0D</td><td>3</td><td>4</td><td>A ← A | [addr]</td><td>Z,N</td></tr>
-      <tr><td>ORA zp</td><td>0x05</td><td>2</td><td>3</td><td>A ← A | [zp]</td><td>Z,N</td></tr>
-      <tr><td>CMP #nn</td><td>0xC9</td><td>2</td><td>2</td><td>A - nn（比較、結果は破棄）</td><td>Z,C,N</td></tr>
-      <tr><td>CMP addr</td><td>0xCD</td><td>3</td><td>4</td><td>A - [addr]（比較）</td><td>Z,C,N</td></tr>
-      <tr><td>CMP zp</td><td>0xC5</td><td>2</td><td>3</td><td>A - [zp]（比較）</td><td>Z,C,N</td></tr>
-    </table>
-
-    <div class="important">
-      <strong>ADC/SBC動作の詳細:</strong><br>
-      <strong>ADC:</strong> result = A + operand + C; A = result & 0xFF; C = (result > 255) ? 1 : 0<br>
-      <strong>SBC:</strong> result = A - operand - (1 - C); A = result & 0xFF; C = (result >= 0) ? 1 : 0<br>
-      <strong>CMP:</strong> result = A - operand; C = (A >= operand) ? 1 : 0（Aは変更しない）
-    </div>
-
-    <h3>2.3 インクリメント/デクリメント（4命令）</h3>
-    <table>
-      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>フラグ</th></tr>
-      <tr><td>INC addr</td><td>0xEE</td><td>3</td><td>6</td><td>[addr] ← [addr] + 1</td><td>Z,N</td></tr>
-      <tr><td>INC zp</td><td>0xE6</td><td>2</td><td>5</td><td>[zp] ← [zp] + 1</td><td>Z,N</td></tr>
-      <tr><td>DEC addr</td><td>0xCE</td><td>3</td><td>6</td><td>[addr] ← [addr] - 1</td><td>Z,N</td></tr>
-      <tr><td>DEC zp</td><td>0xC6</td><td>2</td><td>5</td><td>[zp] ← [zp] - 1</td><td>Z,N</td></tr>
-      <tr><td>INX</td><td>0xE8</td><td>1</td><td>2</td><td>X ← X + 1</td><td>Z,N</td></tr>
-      <tr><td>INY</td><td>0xC8</td><td>1</td><td>2</td><td>Y ← Y + 1</td><td>Z,N</td></tr>
-      <tr><td>DEX</td><td>0xCA</td><td>1</td><td>2</td><td>X ← X - 1</td><td>Z,N</td></tr>
-      <tr><td>DEY</td><td>0x88</td><td>1</td><td>2</td><td>Y ← Y - 1</td><td>Z,N</td></tr>
-    </table>
-
-    <h3>2.4 分岐命令（4命令）</h3>
-    <table>
-      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th><th>条件</th></tr>
-      <tr><td>JMP addr</td><td>0x4C</td><td>3</td><td>3</td><td>PC ← addr（無条件ジャンプ）</td><td>-</td></tr>
-      <tr><td>BEQ rel</td><td>0xF0</td><td>2</td><td>2/3</td><td>Z=1ならPC ← PC + rel</td><td>Z=1</td></tr>
-      <tr><td>BNE rel</td><td>0xD0</td><td>2</td><td>2/3</td><td>Z=0ならPC ← PC + rel</td><td>Z=0</td></tr>
-      <tr><td>BCS rel</td><td>0xB0</td><td>2</td><td>2/3</td><td>C=1ならPC ← PC + rel</td><td>C=1</td></tr>
-      <tr><td>BCC rel</td><td>0x90</td><td>2</td><td>2/3</td><td>C=0ならPC ← PC + rel</td><td>C=0</td></tr>
-    </table>
-
-    <div class="note">
-      <strong>相対分岐の詳細:</strong><br>
-      - relは符号付き8bit (-128～+127)<br>
-      - 負の値の場合: rel > 127なら rel - 256として解釈<br>
-      - 分岐先 = PC + rel（PCは既に次の命令を指している）<br>
-      - サイクル数: 分岐しない=2, 分岐する=3
-    </div>
-
-    <h3>2.5 サブルーチン（2命令）</h3>
-    <table>
-      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th></tr>
-      <tr><td>JSR addr</td><td>0x20</td><td>3</td><td>6</td><td>スタックにPC-1をプッシュしてaddrへジャンプ</td></tr>
-      <tr><td>RTS</td><td>0x60</td><td>1</td><td>6</td><td>スタックからアドレスをポップしてPC+1へ復帰</td></tr>
-    </table>
-
-    <div class="important">
-      <strong>JSR/RTS動作の詳細:</strong><br>
-      <strong>JSR:</strong><br>
-      1. return_addr = PC + 2（JSR命令の次の次）<br>
-      2. [SP] = (return_addr - 1) >> 8（上位バイト）; SP--<br>
-      3. [SP] = (return_addr - 1) & 0xFF（下位バイト）; SP--<br>
-      4. PC = addr<br>
-      <strong>RTS:</strong><br>
-      1. SP++; low = [SP]<br>
-      2. SP++; high = [SP]<br>
-      3. PC = (high << 8 | low) + 1
-    </div>
-
-    <h3>2.6 スタック（2命令）</h3>
-    <table>
-      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th></tr>
-      <tr><td>PHA</td><td>0x48</td><td>1</td><td>3</td><td>[SP] ← A; SP--</td></tr>
-      <tr><td>PLA</td><td>0x68</td><td>1</td><td>4</td><td>SP++; A ← [SP]</td></tr>
-    </table>
-
-    <h3>2.7 その他（2命令）</h3>
-    <table>
-      <tr><th>命令</th><th>オペコード</th><th>バイト数</th><th>サイクル</th><th>説明</th></tr>
-      <tr><td>NOP</td><td>0xEA</td><td>1</td><td>2</td><td>何もしない</td></tr>
-      <tr><td>BRK</td><td>0x00</td><td>1</td><td>7</td><td>実行停止（ブレーク）</td></tr>
-    </table>
-
-    <h2>3. グラフィック仕様</h2>
-
-    <h3>3.1 ディスプレイ</h3>
-    <table>
-      <tr><th>項目</th><th>仕様</th></tr>
-      <tr><td>解像度</td><td>256x256 ピクセル</td></tr>
-      <tr><td>色数</td><td>256色（8bitインデックスカラー）</td></tr>
-      <tr><td>VRAMサイズ</td><td>65,536 bytes (256×256)</td></tr>
-      <tr><td>VRAMアドレス</td><td>0x8000-0xFFFF</td></tr>
-      <tr><td>ピクセルアクセス式</td><td>VRAM[y * 256 + x] = 色番号 (0-255)</td></tr>
-    </table>
-
-    <h3>3.2 カラーパレット</h3>
-    <table>
-      <tr><th>項目</th><th>仕様</th></tr>
-      <tr><td>アドレス</td><td>0xD000-0xD0FF</td></tr>
-      <tr><td>形式</td><td>RGB332（8bit）</td></tr>
-      <tr><td>ビット配置</td><td>RRRGGGBB</td></tr>
-    </table>
-
-    <h4>RGB332からRGB888への変換</h4>
-    <pre>uint8_t rgb332 = palette[color_index];
-uint8_t r = ((rgb332 >> 5) & 0x07) * 36;  // 0-7 → 0-252
-uint8_t g = ((rgb332 >> 2) & 0x07) * 36;  // 0-7 → 0-252
-uint8_t b = (rgb332 & 0x03) * 85;         // 0-3 → 0-255</pre>
-
-    <h4>デフォルトパレット（0-15）</h4>
-    <pre>const uint8_t default_palette[16] = {
-  0x00, // 0:  黒
-  0xFF, // 1:  白
-  0xE0, // 2:  赤
-  0x1C, // 3:  緑
-  0x03, // 4:  青
-  0xFC, // 5:  黄
-  0xE3, // 6:  マゼンタ
-  0x1F, // 7:  シアン
-  0x92, // 8:  灰色
-  0x6D, // 9:  茶
-  0xB8, // 10: オレンジ
-  0x9F, // 11: ライム
-  0x13, // 12: 水色
-  0xA3, // 13: 紫
-  0xFD, // 14: ピンク
-  0xB6  // 15: ベージュ
-};</pre>
-
-    <h3>3.3 スプライト</h3>
-    <table>
-      <tr><th>項目</th><th>仕様</th></tr>
-      <tr><td>スプライト数</td><td>64個</td></tr>
-      <tr><td>スプライトサイズ</td><td>16x16ピクセル（固定）</td></tr>
-      <tr><td>属性テーブル</td><td>0xD100-0xD1FF（4バイト/スプライト）</td></tr>
-      <tr><td>タイルデータ</td><td>0x2000-0x5FFF（256タイル）</td></tr>
-      <tr><td>タイルサイズ</td><td>256バイト/タイル（16x16）</td></tr>
-    </table>
-
-    <h4>スプライト属性（4バイト構造）</h4>
-    <table>
-      <tr><th>オフセット</th><th>名前</th><th>説明</th></tr>
-      <tr><td>+0</td><td>X座標</td><td>0-255（画面上のX位置）</td></tr>
-      <tr><td>+1</td><td>Y座標</td><td>0-255（画面上のY位置）</td></tr>
-      <tr><td>+2</td><td>タイル番号</td><td>0-255（表示するタイルのインデックス）</td></tr>
-      <tr><td>+3</td><td>フラグ</td><td>bit0=有効, bit1=X反転, bit2=Y反転</td></tr>
-    </table>
-
-    <h4>スプライト描画アルゴリズム</h4>
-    <pre>for (int sprite_id = 0; sprite_id < 64; sprite_id++) {
-  uint8_t x = sprite_attr[sprite_id * 4 + 0];
-  uint8_t y = sprite_attr[sprite_id * 4 + 1];
-  uint8_t tile = sprite_attr[sprite_id * 4 + 2];
-  uint8_t flags = sprite_attr[sprite_id * 4 + 3];
-  
-  if (!(flags & 0x01)) continue; // 無効なら描画しない
-  
-  bool flip_x = flags & 0x02;
-  bool flip_y = flags & 0x04;
-  
-  uint8_t* tile_data = &sprite_tiles[tile * 256];
-  
-  for (int sy = 0; sy < 16; sy++) {
-    for (int sx = 0; sx < 16; sx++) {
-      uint8_t color_idx = tile_data[sy * 16 + sx];
-      if (color_idx == 0) continue; // 透明色
-      
-      int px = x + (flip_x ? (15 - sx) : sx);
-      int py = y + (flip_y ? (15 - sy) : sy);
-      
-      if (px >= 0 && px < 256 && py >= 0 && py < 256) {
-        framebuffer[py * 256 + px] = palette[color_idx];
-      }
-    }
-  }
-}</pre>
-
-    <h2>4. MIDI音源仕様</h2>
-
-    <h3>4.1 MIDIレジスタマップ</h3>
-    <table>
-      <tr><th>アドレス</th><th>名前</th><th>R/W</th><th>説明</th></tr>
-      <tr><td>0xD200</td><td>MIDI_CMD</td><td>W</td><td>MIDIステータスバイト（0x80-0xFF）</td></tr>
-      <tr><td>0xD201</td><td>MIDI_DATA1</td><td>W</td><td>データバイト1（0x00-0x7F）</td></tr>
-      <tr><td>0xD202</td><td>MIDI_DATA2</td><td>W</td><td>データバイト2（0x00-0x7F）</td></tr>
-      <tr><td>0xD203</td><td>MIDI_SEND</td><td>W</td><td>書き込みでMIDIメッセージ送信</td></tr>
-      <tr><td>0xD204-0xD213</td><td>CH_PROGRAM[0-15]</td><td>W</td><td>チャンネル音色（0-127）</td></tr>
-      <tr><td>0xD214-0xD223</td><td>CH_VOLUME[0-15]</td><td>W</td><td>チャンネル音量（0-127）</td></tr>
-      <tr><td>0xD224-0xD233</td><td>CH_PAN[0-15]</td><td>W</td><td>チャンネルパン（0-127, 64=中央）</td></tr>
-    </table>
-
-    <h3>4.2 MIDIメッセージフォーマット</h3>
-    <table>
-      <tr><th>メッセージ</th><th>ステータス</th><th>データ1</th><th>データ2</th><th>説明</th></tr>
-      <tr><td>Note Off</td><td>0x80-0x8F</td><td>ノート番号</td><td>ベロシティ</td><td>音を止める</td></tr>
-      <tr><td>Note On</td><td>0x90-0x9F</td><td>ノート番号</td><td>ベロシティ</td><td>音を鳴らす</td></tr>
-      <tr><td>Poly Aftertouch</td><td>0xA0-0xAF</td><td>ノート番号</td><td>圧力</td><td>鍵盤圧力</td></tr>
-      <tr><td>Control Change</td><td>0xB0-0xBF</td><td>CC番号</td><td>値</td><td>コントロール変更</td></tr>
-      <tr><td>Program Change</td><td>0xC0-0xCF</td><td>プログラム番号</td><td>-</td><td>音色変更</td></tr>
-      <tr><td>Channel Aftertouch</td><td>0xD0-0xDF</td><td>圧力</td><td>-</td><td>チャンネル圧力</td></tr>
-      <tr><td>Pitch Bend</td><td>0xE0-0xEF</td><td>LSB</td><td>MSB</td><td>ピッチベンド</td></tr>
-    </table>
-
-    <div class="note">
-      <strong>チャンネル番号の計算:</strong><br>
-      ステータスバイトの下位4bitがチャンネル番号（0-15）<br>
-      例: 0x90 = チャンネル1のNote On, 0x9F = チャンネル16のNote On
-    </div>
-
-    <h3>4.3 MIDI送信手順</h3>
-    <pre>// Note On: チャンネル1でC4(60)を音量100で発音
-memory[0xD200] = 0x90;  // Note On, Ch1
-memory[0xD201] = 60;    // Note number
-memory[0xD202] = 100;   // Velocity
-memory[0xD203] = 0x00;  // Trigger send
-
-// Note Off: チャンネル1のC4(60)を停止
-memory[0xD200] = 0x80;  // Note Off, Ch1
-memory[0xD201] = 60;    // Note number
-memory[0xD202] = 64;    // Release velocity
-memory[0xD203] = 0x00;  // Trigger send
-
-// Program Change: チャンネル1を音色1（ピアノ）に変更
-memory[0xD204] = 1;     // 直接書き込み
-// または
-memory[0xD200] = 0xC0;  // Program Change, Ch1
-memory[0xD201] = 1;     // Program number
-memory[0xD203] = 0x00;  // Trigger send</pre>
-
-    <h3>4.4 MIDIノート番号表</h3>
-    <table>
-      <tr><th>音名</th><th>オクターブ2</th><th>オクターブ3</th><th>オクターブ4</th><th>オクターブ5</th><th>周波数(Hz)</th></tr>
-      <tr><td>C</td><td>36</td><td>48</td><td>60</td><td>72</td><td>261.63</td></tr>
-      <tr><td>C#/D♭</td><td>37</td><td>49</td><td>61</td><td>73</td><td>277.18</td></tr>
-      <tr><td>D</td><td>38</td><td>50</td><td>62</td><td>74</td><td>293.66</td></tr>
-      <tr><td>D#/E♭</td><td>39</td><td>51</td><td>63</td><td>75</td><td>311.13</td></tr>
-      <tr><td>E</td><td>40</td><td>52</td><td>64</td><td>76</td><td>329.63</td></tr>
-      <tr><td>F</td><td>41</td><td>53</td><td>65</td><td>77</td><td>349.23</td></tr>
-      <tr><td>F#/G♭</td><td>42</td><td>54</td><td>66</td><td>78</td><td>369.99</td></tr>
-      <tr><td>G</td><td>43</td><td>55</td><td>67</td><td>79</td><td>392.00</td></tr>
-      <tr><td>G#/A♭</td><td>44</td><td>56</td><td>68</td><td>80</td><td>415.30</td></tr>
-      <tr><td>A</td><td>45</td><td>57</td><td>69</td><td>81</td><td>440.00</td></tr>
-      <tr><td>A#/B♭</td><td>46</td><td>58</td><td>70</td><td>82</td><td>466.16</td></tr>
-      <tr><td>B</td><td>47</td><td>59</td><td>71</td><td>83</td><td>493.88</td></tr>
-    </table>
-
-    <h3>4.5 General MIDI音色表（抜粋）</h3>
-    <table>
-      <tr><th>番号</th><th>音色名</th><th>番号</th><th>音色名</th></tr>
-      <tr><td>0</td><td>Acoustic Grand Piano</td><td>32</td><td>Acoustic Bass</td></tr>
-      <tr><td>1</td><td>Bright Acoustic Piano</td><td>33</td><td>Electric Bass (finger)</td></tr>
-      <tr><td>4</td><td>Electric Piano 1</td><td>40</td><td>Violin</td></tr>
-      <tr><td>5</td><td>Electric Piano 2</td><td>56</td><td>Trumpet</td></tr>
-      <tr><td>16</td><td>Drawbar Organ</td><td>65</td><td>Soprano Sax</td></tr>
-      <tr><td>24</td><td>Acoustic Guitar (nylon)</td><td>73</td><td>Flute</td></tr>
-      <tr><td>25</td><td>Acoustic Guitar (steel)</td><td>80</td><td>Lead 1 (square)</td></tr>
-    </table>
-
-    <h2>5. 入力仕様</h2>
-
-    <h3>5.1 コントローラー入力</h3>
-    <table>
-      <tr><th>アドレス</th><th>名前</th><th>R/W</th><th>説明</th></tr>
-      <tr><td>0xD300</td><td>CONTROLLER1</td><td>R</td><td>コントローラー1のボタン状態</td></tr>
-      <tr><td>0xD301</td><td>CONTROLLER2</td><td>R</td><td>コントローラー2のボタン状態</td></tr>
-    </table>
-
-    <h4>ボタンビット配置</h4>
-    <table>
-      <tr><th>ビット</th><th>ボタン</th><th>値</th></tr>
-      <tr><td>bit 0</td><td>上</td><td>0x01</td></tr>
-      <tr><td>bit 1</td><td>下</td><td>0x02</td></tr>
-      <tr><td>bit 2</td><td>左</td><td>0x04</td></tr>
-      <tr><td>bit 3</td><td>右</td><td>0x08</td></tr>
-      <tr><td>bit 4</td><td>A</td><td>0x10</td></tr>
-      <tr><td>bit 5</td><td>B</td><td>0x20</td></tr>
-      <tr><td>bit 6</td><td>START</td><td>0x40</td></tr>
-      <tr><td>bit 7</td><td>SELECT</td><td>0x80</td></tr>
-    </table>
-
-    <h4>ボタン判定例</h4>
-    <pre>uint8_t input = memory[0xD300];
-bool up_pressed = input & 0x01;
-bool a_pressed = input & 0x10;
-bool start_pressed = input & 0x40;</pre>
-
-    <h3>5.2 その他のI/Oレジスタ</h3>
-    <table>
-      <tr><th>アドレス</th><th>名前</th><th>R/W</th><th>説明</th></tr>
-      <tr><td>0xD302</td><td>RANDOM</td><td>R</td><td>乱数値（0-255）、読み取りごとに更新</td></tr>
-      <tr><td>0xD303</td><td>FRAME_LOW</td><td>R</td><td>フレームカウンタ下位8bit</td></tr>
-      <tr><td>0xD304</td><td>FRAME_HIGH</td><td>R</td><td>フレームカウンタ上位8bit</td></tr>
-    </table>
-
-    <h2>6. エミュレーター実装ガイド</h2>
-
-    <h3>6.1 基本構造（JavaScript）</h3>
-    <pre>class XVM16Lite {
-  constructor() {
-    // レジスタ
-    this.A = 0;
-    this.X = 0;
-    this.Y = 0;
-    this.SP = 0x01FF;
-    this.PC = 0xE000;
-    this.F = 0; // Z,C,N
-    
-    // メモリ
-    this.ram = new Uint8Array(0x8000);        // 0x0000-0x7FFF
-    this.vram = new Uint8Array(0x10000);      // 0x8000-0xFFFF
-    this.palette = new Uint8Array(256);       // 0xD000-0xD0FF
-    this.spriteAttr = new Uint8Array(256);    // 0xD100-0xD1FF
-    this.spriteTiles = new Uint8Array(0x4000); // 0x2000-0x5FFF
-    this.midiRegs = new Uint8Array(256);      // 0xD200-0xD2FF
-    this.ioRegs = new Uint8Array(256);        // 0xD300-0xD3FF
-    this.rom = new Uint8Array(0x2000);        // 0xE000-0xFFFF
-    
-    this.halted = false;
-    this.cycles = 0;
-    this.frameCount = 0;
-    
-    this.initDefaultPalette();
-  }
-  
-  initDefaultPalette() {
-    const defaults = [
-      0x00, 0xFF, 0xE0, 0x1C, 0x03, 0xFC, 0xE3, 0x1F,
-      0x92, 0x6D, 0xB8, 0x9F, 0x13, 0xA3, 0xFD, 0xB6
-    ];
-    for (let i = 0; i < 16; i++) {
-      this.palette[i] = defaults[i];
-    }
-  }
-  
-  // フラグ操作
-  setZ(val) { this.F = (this.F & ~0x01) | ((val & 0xFF) === 0 ? 0x01 : 0); }
-  setC(val) { this.F = (this.F & ~0x02) | (val ? 0x02 : 0); }
-  setN(val) { this.F = (this.F & ~0x04) | ((val & 0x80) ? 0x04 : 0); }
-  setZN(val) { this.setZ(val); this.setN(val); }
-  
-  getZ() { return (this.F & 0x01) !== 0; }
-  getC() { return (this.F & 0x02) !== 0; }
-  getN() { return (this.F & 0x04) !== 0; }
-}</pre>
-
-    <h3>6.2 メモリアクセス</h3>
-    <pre>read8(addr) {
-  addr &= 0xFFFF;
-  
-  if (addr < 0x8000) {
-    return this.ram[addr];
-  } else if (addr >= 0xD000 && addr < 0xD100) {
-    return this.palette[addr - 0xD000];
-  } else if (addr >= 0xD100 && addr < 0xD200) {
-    return this.spriteAttr[addr - 0xD100];
-  } else if (addr >= 0xD200 && addr < 0xD300) {
-    return this.midiRegs[addr - 0xD200];
-  } else if (addr >= 0xD300 && addr < 0xD400) {
-    return this.ioRegs[addr - 0xD300];
-  } else if (addr >= 0xE000) {
-    return this.rom[addr - 0xE000];
-  } else {
-    return this.vram[addr - 0x8000];
-  }
-}
-
-write8(addr, val) {
-  addr &= 0xFFFF;
-  val &= 0xFF;
-  
-  if (addr < 0x8000) {
-    this.ram[addr] = val;
-    // スプライトタイル領域の特殊処理
-    if (addr >= 0x2000 && addr < 0x6000) {
-      this.spriteTiles[addr - 0x2000] = val;
-    }
-  } else if (addr >= 0xD000 && addr < 0xD100) {
-    this.palette[addr - 0xD000] = val;
-    this.vram[addr - 0x8000] = val; // VRAM にも書き込み
-  } else if (addr >= 0xD100 && addr < 0xD200) {
-    this.spriteAttr[addr - 0xD100] = val;
-    this.vram[addr - 0x8000] = val;
-  } else if (addr >= 0xD200 && addr < 0xD300) {
-    this.midiRegs[addr - 0xD200] = val;
-    this.handleMIDIWrite(addr, val);
-    this.vram[addr - 0x8000] = val;
-  } else if (addr >= 0xD300 && addr < 0xD400) {
-    if (addr >= 0xD302) { // 0xD300-0xD301は読み取り専用
-      this.ioRegs[addr - 0xD300] = val;
-    }
-  } else if (addr >= 0xE000) {
-    // ROM領域は書き込み不可
-  } else {
-    this.vram[addr - 0x8000] = val;
-  }
-}
-
-read16(addr) {
-  const lo = this.read8(addr);
-  const hi = this.read8(addr + 1);
-  return (hi << 8) | lo;
-}
-
-fetchByte() {
-  const val = this.read8(this.PC);
-  this.PC = (this.PC + 1) & 0xFFFF;
-  return val;
-}
-
-fetchWord() {
-  const lo = this.fetchByte();
-  const hi = this.fetchByte();
-  return (hi << 8) | lo;
-}</pre>
-
-    <h3>6.3 命令実行ループ</h3>
-    <pre>step() {
-  if (this.halted) return;
-  
-  const opcode = this.fetchByte();
-  const startCycles = this.cycles;
-  
-  this.execute(opcode);
-  
-  return this.cycles - startCycles;
-}
-
-runFrame() {
-  const targetCycles = 66667;
-  this.cycles = 0;
-  
-  while (this.cycles < targetCycles && !this.halted) {
-    this.step();
-  }
-  
-  this.frameCount++;
-  this.ioRegs[3] = this.frameCount & 0xFF;
-  this.ioRegs[4] = (this.frameCount >> 8) & 0xFF;
-  this.ioRegs[2] = Math.floor(Math.random() * 256);
-}</pre>
-
-    <h3>6.4 命令実装例</h3>
-    <pre>execute(opcode) {
-  switch (opcode) {
-    // LDA #nn
-    case 0xA9: {
-      this.A = this.fetchByte();
-      this.setZN(this.A);
-      this.cycles += 2;
-      break;
-    }
-    
-    // LDA addr
-    case 0xAD: {
-      const addr = this.fetchWord();
-      this.A = this.read8(addr);
-      this.setZN(this.A);
-      this.cycles += 4;
-      break;
-    }
-    
-    // STA addr
-    case 0x8D: {
-      const addr = this.fetchWord();
-      this.write8(addr, this.A);
-      this.cycles += 4;
-      break;
-    }
-    
-    // ADC #nn
-    case 0x69: {
-      const val = this.fetchByte();
-      const result = this.A + val + (this.getC() ? 1 : 0);
-      this.setC(result > 255);
-      this.A = result & 0xFF;
-      this.setZN(this.A);
-      this.cycles += 2;
-      break;
-    }
-    
-    // JMP addr
-    case 0x4C: {
-      this.PC = this.fetchWord();
-      this.cycles += 3;
-      break;
-    }
-    
-    // BEQ rel
-    case 0xF0: {
-      const offset = this.fetchByte();
-      this.cycles += 2;
-      if (this.getZ()) {
-        const signedOffset = offset > 127 ? offset - 256 : offset;
-        this.PC = (this.PC + signedOffset) & 0xFFFF;
-        this.cycles += 1;
-      }
-      break;
-    }
-    
-    // JSR addr
-    case 0x20: {
-      const addr = this.fetchWord();
-      const returnAddr = (this.PC - 1) & 0xFFFF;
-      this.write8(this.SP, (returnAddr >> 8) & 0xFF);
-      this.SP = (this.SP - 1) & 0xFFFF;
-      this.write8(this.SP, returnAddr & 0xFF);
-      this.SP = (this.SP - 1) & 0xFFFF;
-      this.PC = addr;
-      this.cycles += 6;
-      break;
-    }
-    
-    // RTS
-    case 0x60: {
-      this.SP = (this.SP + 1) & 0xFFFF;
-      const lo = this.read8(this.SP);
-      this.SP = (this.SP + 1) & 0xFFFF;
-      const hi = this.read8(this.SP);
-      this.PC = (((hi << 8) | lo) + 1) & 0xFFFF;
-      this.cycles += 6;
-      break;
-    }
-    
-    // BRK
-    case 0x00: {
-      this.halted = true;
-      this.cycles += 7;
-      break;
-    }
-    
-    // NOP
-    case 0xEA: {
-      this.cycles += 2;
-      break;
-    }
-    
-    default:
-      console.error(`Unknown opcode: 0x${opcode.toString(16).toUpperCase()}`);
-      this.halted = true;
-  }
-}</pre>
-
-    <h3>6.5 MIDI処理</h3>
-    <pre>async initMIDI() {
-  try {
-    this.midiAccess = await navigator.requestMIDIAccess();
-    this.midiOutput = Array.from(this.midiAccess.outputs.values())[0];
-    if (!this.midiOutput) {
-      console.warn('MIDI output not found');
-    }
-  } catch (e) {
-    console.error('Web MIDI API not supported', e);
-  }
-}
-
-handleMIDIWrite(addr, val) {
-  const offset = addr - 0xD200;
-  
-  // 0xD203: 送信トリガー
-  if (offset === 3) {
-    const cmd = this.midiRegs[0];
-    const data1 = this.midiRegs[1];
-    const data2 = this.midiRegs[2];
-    
-    if (this.midiOutput) {
-      // データバイトは7bit（0-127）にマスク
-      this.midiOutput.send([cmd, data1 & 0x7F, data2 & 0x7F]);
-    }
-  }
-  // 0xD204-0xD213: 音色変更
-  else if (offset >= 4 && offset < 20) {
-    const ch = offset - 4;
-    if (this.midiOutput) {
-      this.midiOutput.send([0xC0 + ch, val & 0x7F]);
-    }
-  }
-  // 0xD214-0xD223: 音量（CC#7）
-  else if (offset >= 20 && offset < 36) {
-    const ch = offset - 20;
-    if (this.midiOutput) {
-      this.midiOutput.send([0xB0 + ch, 7, val & 0x7F]);
-    }
-  }
-  // 0xD224-0xD233: パン（CC#10）
-  else if (offset >= 36 && offset < 52) {
-    const ch = offset - 36;
-    if (this.midiOutput) {
-      this.midiOutput.send([0xB0 + ch, 10, val & 0x7F]);
-    }
-  }
-}</pre>
-
-    <h3>6.6 画面描画</h3>
-    <pre>render(canvas) {
-  const ctx = canvas.getContext('2d');
-  const imageData = ctx.createImageData(256, 256);
-  const pixels = imageData.data;
-  
-  // BG描画
-  for (let y = 0; y < 256; y++) {
-    for (let x = 0; x < 256; x++) {
-      const colorIdx = this.vram[y * 256 + x];
-      const rgb332 = this.palette[colorIdx];
-      
-      const r = ((rgb332 >> 5) & 0x07) * 36;
-      const g = ((rgb332 >> 2) & 0x07) * 36;
-      const b = (rgb332 & 0x03) * 85;
-      
-      const offset = (y * 256 + x) * 4;
-      pixels[offset] = r;
-      pixels[offset + 1] = g;
-      pixels[offset + 2] = b;
-      pixels[offset + 3] = 255;
-    }
-  }
-  
-  ctx.putImageData(imageData, 0, 0);
-  this.renderSprites(ctx);
-}
-
-renderSprites(ctx) {
-  for (let i = 0; i < 64; i++) {
-    const x = this.spriteAttr[i * 4];
-    const y = this.spriteAttr[i * 4 + 1];
-    const tile = this.spriteAttr[i * 4 + 2];
-    const flags = this.spriteAttr[i * 4 + 3];
-    
-    if (!(flags & 0x01)) continue;
-    
-    const flipX = (flags & 0x02) !== 0;
-    const flipY = (flags & 0x04) !== 0;
-    
-    for (let sy = 0; sy < 16; sy++) {
-      for (let sx = 0; sx < 16; sx++) {
-        const colorIdx = this.spriteTiles[tile * 256 + sy * 16 + sx];
-        if (colorIdx === 0) continue;
-        
-        const rgb332 = this.palette[colorIdx];
-        const r = ((rgb332 >> 5) & 0x07) * 36;
-        const g = ((rgb332 >> 2) & 0x07) * 36;
-        const b = (rgb332 & 0x03) * 85;
-        
-        const px = x + (flipX ? (15 - sx) : sx);
-        const py = y + (flipY ? (15 - sy) : sy);
-        
-        if (px >= 0 && px < 256 && py >= 0 && py < 256) {
-          ctx.fillStyle = `rgb(${r},${g},${b})`;
-          ctx.fillRect(px, py, 1, 1);
-        }
-      }
-    }
-  }
-}</pre>
-
-    <h2>7. サンプルプログラム</h2>
-
-    <h3>7.1 画面塗りつぶし</h3>
-    <pre>; 赤色（パレット2番）で画面全体を塗る
-
-E000: A9 02     LDA #$02      ; A = 2（赤色）
-E002: A2 00     LDX #$00      ; X = 0
-E004: A0 00     LDY #$00      ; Y = 0
-
-; 外側ループ（Y = 0-255）
-E006: A9 02     LDA #$02      ; A = 2
-E008: 8D 00 80  STA $8000     ; VRAM[0x8000] = 2
-E00B: E8        INX           ; X++
-E00C: D0 F8     BNE $E006     ; X != 0 なら E006へ
-E00E: C8        INY           ; Y++
-E00F: D0 F5     BNE $E006     ; Y != 0 なら E006へ
-
-E011: 00        BRK           ; 終了</pre>
-
-    <h3>7.2 音階演奏</h3>
-    <pre>; C4からC5までの音階を順に鳴らす
-
-E000: A2 3C     LDX #$3C      ; X = 60（C4）
-
-; ループ開始
-E002: A9 90     LDA #$90      ; Note On, Ch1
-E004: 8D 00 D2  STA $D200
-E007: 8E 01 D2  STX $D201     ; ノート番号
-E00A: A9 64     LDA #$64      ; ベロシティ100
-E00C: 8D 02 D2  STA $D202
-E00F: A9 00     LDA #$00
-E011: 8D 03 D2  STA $D203     ; 送信
-
-; 60フレーム待機（簡易版）
-E014: A0 3C     LDY #$3C      ; Y = 60
-E016: 88        DEY           ; Y--
-E017: D0 FD     BNE $E016     ; Y != 0 なら E016へ
-
-; Note Off
-E019: A9 80     LDA #$80      ; Note Off, Ch1
-E01B: 8D 00 D2  STA $D200
-E01E: 8E 01 D2  STX $D201
-E021: A9 40     LDA #$40
-E023: 8D 02 D2  STA $D202
-E026: A9 00     LDA #$00
-E028: 8D 03 D2  STA $D203
-
-E02B: E8        INX           ; 次のノート
-E02C: E0 49     CPX #$49      ; X == 73（C5）?
-E02E: D0 D2     BNE $E002     ; まだなら続行
-
-E030: 00        BRK           ; 終了</pre>
-
-    <h3>7.3 スプライト移動</h3>
-    <pre>; 方向キーでスプライト0を移動
-
-E000: A9 80     LDA #$80      ; 初期X座標
-E002: 8D 00 D1  STA $D100
-E005: A9 80     LDA #$80      ; 初期Y座標
-E007: 8D 01 D1  STA $D101
-E00A: A9 00     LDA #$00      ; タイル0
-E00C: 8D 02 D1  STA $D102
-E00F: A9 01     LDA #$01      ; 有効化
-E011: 8D 03 D1  STA $D103
-
-; メインループ
-E014: AD 00 D3  LDA $D300     ; コントローラー読み取り
-E017: 29 01     AND #$01      ; 上ボタン？
-E019: F0 08     BEQ $E023     ; 押されてない
-E01B: AD 01 D1  LDA $D101     ; Y座標読み取り
-E01E: 69 FF     ADC #$FF      ; Y-- (ADCで-1)
-E020: 8D 01 D1  STA $D101     ; Y座標書き込み
-
-E023: AD 00 D3  LDA $D300
-E026: 29 02     AND #$02      ; 下ボタン？
-E028: F0 08     BEQ $E032
-E02A: AD 01 D1  LDA $D101
-E02D: 69 01     ADC #$01      ; Y++
-E02F: 8D 01 D1  STA $D101
-
-E032: 4C 14 E0  JMP $E014     ; ループ</pre>
-
-    <h2>8. デバッグ支援</h2>
-
-    <h3>8.1 デバッガ機能</h3>
-    <pre>class Debugger {
-  constructor(vm) {
-    this.vm = vm;
-    this.breakpoints = new Set();
-    this.watchpoints = new Set();
-  }
-  
-  addBreakpoint(addr) {
-    this.breakpoints.add(addr);
-  }
-  
-  step() {
-    const pc = this.vm.PC;
-    const opcode = this.vm.read8(pc);
-    
-    console.log(`PC: ${pc.toString(16).toUpperCase().padStart(4,'0')} ` +
-                `A: ${this.vm.A.toString(16).toUpperCase().padStart(2,'0')} ` +
-                `X: ${this.vm.X.toString(16).toUpperCase().padStart(2,'0')} ` +
-                `Y: ${this.vm.Y.toString(16).toUpperCase().padStart(2,'0')} ` +
-                `SP: ${this.vm.SP.toString(16).toUpperCase().padStart(4,'0')} ` +
-                `F: ${this.vm.F.toString(2).padStart(8,'0')}`);
-    
-    this.vm.step();
-  }
-  
-  disassemble(addr, count = 10) {
-    const instructions = [];
-    for (let i = 0; i < count; i++) {
-      const opcode = this.vm.read8(addr);
-      const instr = this.decodeInstruction(addr);
-      instructions.push(`${addr.toString(16).padStart(4,'0')}: ${instr}`);
-      addr += this.getInstructionLength(opcode);
-    }
-    return instructions.join('\n');
-  }
-}</pre>
-
-    <div style="margin-top: 50px; padding: 25px; background: #0a0a0a; border: 2px solid #0f0; text-align: center;">
-      <h3 style="color: #0f0; margin-top: 0;">XVM-16 Lite 完全版仕様書 v1.0</h3>
-      <p style="color: #888; margin: 10px 0;">
-        256x256解像度 | 256色 | MIDI 16ch | スプライト64個<br>
-        命令セット25個 | エミュレーター実装完全対応
-      </p>
-      <p style="color: #0ff; font-size: 12px; margin-top: 15px;">
-        CC0 Public Domain - 自由に使用・改変・配布できます
-      </p>
-    </div>
-
+<header>
+  <div class="logo">RETRO<span>-8</span> <span style="font-size:14px;color:var(--dim);">FANTASY CONSOLE</span></div>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <span style="font-size:12px;color:var(--dim);">TECHNICAL SPECIFICATION</span>
+    <span class="version-badge">v1.0</span>
   </div>
+</header>
+
+<div class="container">
+
+  <!-- 目次 -->
+  <section id="toc">
+    <div class="sec-header">
+      <span class="sec-num">00</span>
+      <span class="sec-title">目次 / INDEX</span>
+    </div>
+    <nav class="toc">
+      <a href="#overview">01 概要</a>
+      <a href="#cpu">02 CPU</a>
+      <a href="#memory">03 メモリマップ</a>
+      <a href="#video">04 ビデオ</a>
+      <a href="#sprites">05 スプライト</a>
+      <a href="#bg">06 BG スクロール</a>
+      <a href="#registers">07 I/Oレジスタ</a>
+      <a href="#instructions">08 命令セット</a>
+      <a href="#sound">09 サウンド</a>
+      <a href="#input">10 入力</a>
+      <a href="#boot">11 ブートシーケンス</a>
+    </nav>
+  </section>
+
+  <!-- 01 概要 -->
+  <section id="overview">
+    <div class="sec-header">
+      <span class="sec-num">01</span>
+      <span class="sec-title">概要 / OVERVIEW</span>
+    </div>
+    <div class="sec-body">
+      <p>RETRO-8はエミュレーター実装・低レベルプログラミングを第一目標に設計されたファンタジーコンソールです。命令数50以下・レジスタ直結のグラフィックシステム・シンプルなメモリマップを採用し、数百行のコードで動作するエミュレーターを書けるよう設計されています。</p>
+
+      <div class="spec-grid" style="margin-top:20px;">
+        <div class="spec-card">
+          <div class="spec-label">RESOLUTION</div>
+          <div class="spec-value">256<span class="spec-unit">×</span>256</div>
+          <div class="spec-sub">60fps / 固定フレームレート</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">CPU CLOCK</div>
+          <div class="spec-value">4<span class="spec-unit">MHz</span></div>
+          <div class="spec-sub">8bit 仮想 CISC</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">TOTAL MEMORY</div>
+          <div class="spec-value">64<span class="spec-unit">KB</span></div>
+          <div class="spec-sub">アドレス空間 0x0000–0xFFFF</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">COLORS</div>
+          <div class="spec-value">32<span class="spec-unit">色</span></div>
+          <div class="spec-sub">5bit パレット、透明色 #0</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">SPRITES</div>
+          <div class="spec-value">64<span class="spec-unit">体</span></div>
+          <div class="spec-sub">8×8 〜 32×32px 可変</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">INSTRUCTIONS</div>
+          <div class="spec-value">48<span class="spec-unit">命令</span></div>
+          <div class="spec-sub">固定長 2〜4バイト</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">BG LAYERS</div>
+          <div class="spec-value">2<span class="spec-unit">面</span></div>
+          <div class="spec-sub">ピクセル単位スクロール</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">SOUND CH</div>
+          <div class="spec-value">4<span class="spec-unit">ch</span></div>
+          <div class="spec-sub">矩形波×2、三角波×1、ノイズ×1</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 CPU -->
+  <section id="cpu">
+    <div class="sec-header">
+      <span class="sec-num">02</span>
+      <span class="sec-title">CPU アーキテクチャ</span>
+    </div>
+    <div class="sec-body">
+      <div class="two-col">
+        <div>
+          <h3>汎用レジスタ (8bit)</h3>
+          <table class="reg-table">
+            <thead><tr><th>名前</th><th>別名</th><th>用途</th></tr></thead>
+            <tbody>
+              <tr><td class="rname">A</td><td class="raddr">アキュムレータ</td><td>演算・転送主体</td></tr>
+              <tr><td class="rname">B</td><td class="raddr">汎用</td><td>カウンタ・汎用</td></tr>
+              <tr><td class="rname">C</td><td class="raddr">汎用</td><td>汎用</td></tr>
+              <tr><td class="rname">D</td><td class="raddr">汎用</td><td>汎用</td></tr>
+              <tr><td class="rname">X</td><td class="raddr">インデックス L</td><td>16bitペア HL で使用</td></tr>
+              <tr><td class="rname">Y</td><td class="raddr">インデックス H</td><td>16bitペア HL で使用</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3>特殊レジスタ</h3>
+          <table class="reg-table">
+            <thead><tr><th>名前</th><th>ビット</th><th>説明</th></tr></thead>
+            <tbody>
+              <tr><td class="rname">PC</td><td class="rbits">16bit</td><td>プログラムカウンタ</td></tr>
+              <tr><td class="rname">SP</td><td class="rbits">16bit</td><td>スタックポインタ (初期 0xCFFF)</td></tr>
+              <tr><td class="rname">F</td><td class="rbits">8bit</td><td>フラグレジスタ</td></tr>
+            </tbody>
+          </table>
+
+          <h3 style="margin-top:20px;">フラグ (F レジスタ)</h3>
+          <table class="reg-table">
+            <thead><tr><th>ビット</th><th>名前</th><th>意味</th></tr></thead>
+            <tbody>
+              <tr><td class="raddr">7</td><td class="rname">Z</td><td>ゼロフラグ</td></tr>
+              <tr><td class="raddr">6</td><td class="rname">C</td><td>キャリーフラグ</td></tr>
+              <tr><td class="raddr">5</td><td class="rname">N</td><td>ネガティブフラグ</td></tr>
+              <tr><td class="raddr">4</td><td class="rname">V</td><td>オーバーフローフラグ</td></tr>
+              <tr><td class="raddr">3–0</td><td class="rname">—</td><td>未使用 (常に 0)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="tip-box">
+        <strong>設計方針：</strong> 全命令2〜4バイト固定長。デコードはバイト1のみで命令種別を確定できる。割り込みはVBLANK・HBLANK・コントローラーの3種のみ。割り込みベクタは 0x0010〜0x0015。
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 メモリマップ -->
+  <section id="memory">
+    <div class="sec-header">
+      <span class="sec-num">03</span>
+      <span class="sec-title">メモリマップ</span>
+    </div>
+    <div class="sec-body">
+      <table class="memmap">
+        <thead>
+          <tr>
+            <th>アドレス</th>
+            <th>サイズ</th>
+            <th>名称</th>
+            <th>説明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="addr">0x0000 – 0x000F</td>
+            <td><span class="size-badge">16B</span></td>
+            <td>ZERO PAGE SPECIAL</td>
+            <td>ゼロページ先頭。システム予約（リセット/NMI ベクタ等）</td>
+          </tr>
+          <tr>
+            <td class="addr">0x0010 – 0x001F</td>
+            <td><span class="size-badge">16B</span></td>
+            <td>IRQ VECTORS</td>
+            <td>割り込みベクタテーブル (VBLANK, HBLANK, INPUT)</td>
+          </tr>
+          <tr>
+            <td class="addr">0x0020 – 0x00FF</td>
+            <td><span class="size-badge">224B</span></td>
+            <td>ZERO PAGE</td>
+            <td>高速アクセス可能な作業領域</td>
+          </tr>
+          <tr>
+            <td class="addr">0x0100 – 0x01FF</td>
+            <td><span class="size-badge">256B</span></td>
+            <td>STACK</td>
+            <td>ハードウェアスタック (SP 初期値 0x01FF)</td>
+          </tr>
+          <tr>
+            <td class="addr">0x0200 – 0x03FF</td>
+            <td><span class="size-badge">512B</span></td>
+            <td>SPRITE OAM</td>
+            <td>スプライト属性テーブル × 64体 (8B/体)</td>
+          </tr>
+          <tr>
+            <td class="addr">0x0400 – 0x07FF</td>
+            <td><span class="size-badge">1KB</span></td>
+            <td>BG0 TILEMAP</td>
+            <td>BG レイヤー0 タイルマップ (32×32 = 1024タイル)</td>
+          </tr>
+          <tr>
+            <td class="addr">0x0800 – 0x0BFF</td>
+            <td><span class="size-badge">1KB</span></td>
+            <td>BG1 TILEMAP</td>
+            <td>BG レイヤー1 タイルマップ (32×32)</td>
+          </tr>
+          <tr>
+            <td class="addr">0x0C00 – 0x0FFF</td>
+            <td><span class="size-badge">1KB</span></td>
+            <td>I/O REGISTERS</td>
+            <td>ビデオ・サウンド・入力レジスタ (後述)</td>
+          </tr>
+          <tr>
+            <td class="addr">0x1000 – 0x1FFF</td>
+            <td><span class="size-badge">4KB</span></td>
+            <td>TILE ROM (BG)</td>
+            <td>BGタイル定義 256枚 × 16B (8×8 px, 4bit/px)</td>
+          </tr>
+          <tr>
+            <td class="addr">0x2000 – 0x3FFF</td>
+            <td><span class="size-badge">8KB</span></td>
+            <td>SPRITE ROM</td>
+            <td>スプライトタイル 512枚 × 16B</td>
+          </tr>
+          <tr>
+            <td class="addr">0x4000 – 0x4FFF</td>
+            <td><span class="size-badge">4KB</span></td>
+            <td>PALETTE RAM</td>
+            <td>パレット 32色 × 3B (RGB) + 予約1B = 128B</td>
+          </tr>
+          <tr>
+            <td class="addr">0x5000 – 0x7FFF</td>
+            <td><span class="size-badge">12KB</span></td>
+            <td>WORK RAM</td>
+            <td>プログラム用作業メモリ</td>
+          </tr>
+          <tr>
+            <td class="addr">0x8000 – 0xBFFF</td>
+            <td><span class="size-badge">16KB</span></td>
+            <td>ROM BANK 0</td>
+            <td>カートリッジ ROM バンク0（固定）</td>
+          </tr>
+          <tr>
+            <td class="addr">0xC000 – 0xFFFF</td>
+            <td><span class="size-badge">16KB</span></td>
+            <td>ROM BANK 1–N</td>
+            <td>バンク切替 ROM（レジスタ 0x0C00 でバンク指定）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 04 ビデオ -->
+  <section id="video">
+    <div class="sec-header">
+      <span class="sec-num">04</span>
+      <span class="sec-title">ビデオシステム</span>
+    </div>
+    <div class="sec-body">
+      <div class="two-col">
+        <div>
+          <h3>描画レイヤー順序（後ろ→前）</h3>
+          <ol style="padding-left:18px;color:var(--text);line-height:2.2;">
+            <li style="color:var(--dim)">背景色（パレット #0）</li>
+            <li>BG1（背景レイヤー）</li>
+            <li>スプライト（優先度 0）</li>
+            <li>BG0（前景レイヤー）</li>
+            <li>スプライト（優先度 1）</li>
+          </ol>
+
+          <h3>タイル形式</h3>
+          <p>8×8 ピクセル、<strong>4bit/px（ニブル形式）</strong>。1タイル = 32バイト。各ピクセルはパレット番号0〜15。パレット番号0は透明色扱い（スプライト・BG共通）。</p>
+          <p>タイルマップの1エントリは1バイト：</p>
+          <code>[ bit7:FLIP_H | bit6:FLIP_V | bit5-4:palette_bank | bit3-0:tile_hi ]</code><br><br>
+          <code>次バイト: tile_lo → tile_id = tile_hi&lt;&lt;8 | tile_lo</code>
+          <p style="margin-top:8px;font-size:12px;color:var(--dim)">※タイルマップは1エントリ2バイト（合計 32×32×2=2KB）</p>
+        </div>
+        <div>
+          <h3>パレット (32色)</h3>
+          <div class="palette-wrap">
+            <!-- 32色パレット -->
+            <div class="pal-swatch" style="background:#000000" data-hex="#000000"><span class="pal-idx">0</span></div>
+            <div class="pal-swatch" style="background:#1a1a2e" data-hex="#1a1a2e"><span class="pal-idx">1</span></div>
+            <div class="pal-swatch" style="background:#16213e" data-hex="#16213e"><span class="pal-idx">2</span></div>
+            <div class="pal-swatch" style="background:#0f3460" data-hex="#0f3460"><span class="pal-idx">3</span></div>
+            <div class="pal-swatch" style="background:#533483" data-hex="#533483"><span class="pal-idx">4</span></div>
+            <div class="pal-swatch" style="background:#e94560" data-hex="#e94560"><span class="pal-idx">5</span></div>
+            <div class="pal-swatch" style="background:#f5a623" data-hex="#f5a623"><span class="pal-idx">6</span></div>
+            <div class="pal-swatch" style="background:#f7e98e" data-hex="#f7e98e"><span class="pal-idx">7</span></div>
+            <div class="pal-swatch" style="background:#ffffff" data-hex="#ffffff"><span class="pal-idx">8</span></div>
+            <div class="pal-swatch" style="background:#aaaaaa" data-hex="#aaaaaa"><span class="pal-idx">9</span></div>
+            <div class="pal-swatch" style="background:#555555" data-hex="#555555"><span class="pal-idx">10</span></div>
+            <div class="pal-swatch" style="background:#222222" data-hex="#222222"><span class="pal-idx">11</span></div>
+            <div class="pal-swatch" style="background:#00b4d8" data-hex="#00b4d8"><span class="pal-idx">12</span></div>
+            <div class="pal-swatch" style="background:#0077b6" data-hex="#0077b6"><span class="pal-idx">13</span></div>
+            <div class="pal-swatch" style="background:#023e8a" data-hex="#023e8a"><span class="pal-idx">14</span></div>
+            <div class="pal-swatch" style="background:#90e0ef" data-hex="#90e0ef"><span class="pal-idx">15</span></div>
+            <div class="pal-swatch" style="background:#52b788" data-hex="#52b788"><span class="pal-idx">16</span></div>
+            <div class="pal-swatch" style="background:#2d6a4f" data-hex="#2d6a4f"><span class="pal-idx">17</span></div>
+            <div class="pal-swatch" style="background:#1b4332" data-hex="#1b4332"><span class="pal-idx">18</span></div>
+            <div class="pal-swatch" style="background:#b7e4c7" data-hex="#b7e4c7"><span class="pal-idx">19</span></div>
+            <div class="pal-swatch" style="background:#ff6b35" data-hex="#ff6b35"><span class="pal-idx">20</span></div>
+            <div class="pal-swatch" style="background:#c1440e" data-hex="#c1440e"><span class="pal-idx">21</span></div>
+            <div class="pal-swatch" style="background:#7b2d00" data-hex="#7b2d00"><span class="pal-idx">22</span></div>
+            <div class="pal-swatch" style="background:#ffbe0b" data-hex="#ffbe0b"><span class="pal-idx">23</span></div>
+            <div class="pal-swatch" style="background:#8338ec" data-hex="#8338ec"><span class="pal-idx">24</span></div>
+            <div class="pal-swatch" style="background:#3a86ff" data-hex="#3a86ff"><span class="pal-idx">25</span></div>
+            <div class="pal-swatch" style="background:#06d6a0" data-hex="#06d6a0"><span class="pal-idx">26</span></div>
+            <div class="pal-swatch" style="background:#ffd166" data-hex="#ffd166"><span class="pal-idx">27</span></div>
+            <div class="pal-swatch" style="background:#ef476f" data-hex="#ef476f"><span class="pal-idx">28</span></div>
+            <div class="pal-swatch" style="background:#118ab2" data-hex="#118ab2"><span class="pal-idx">29</span></div>
+            <div class="pal-swatch" style="background:#073b4c" data-hex="#073b4c"><span class="pal-idx">30</span></div>
+            <div class="pal-swatch" style="background:#6d6875" data-hex="#6d6875"><span class="pal-idx">31</span></div>
+          </div>
+          <p style="font-size:11px;color:var(--dim);margin-top:28px;">パレット #0（黒）は透明色。RAM上書きで変更可能（0x4000–0x407F）。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 スプライト -->
+  <section id="sprites">
+    <div class="sec-header">
+      <span class="sec-num">05</span>
+      <span class="sec-title">スプライト OAM</span>
+    </div>
+    <div class="sec-body">
+      <p>スプライト属性テーブル（OAM）は <code>0x0200–0x03FF</code>。64体 × 8バイト。</p>
+      <table class="memmap" style="margin-top:12px;">
+        <thead>
+          <tr><th>オフセット</th><th>名称</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="addr">+0</td><td>X_LO</td><td>X座標下位8bit（-128〜383 で画面外もOK）</td></tr>
+          <tr><td class="addr">+1</td><td>X_HI</td><td>X座標上位（bit0のみ使用）</td></tr>
+          <tr><td class="addr">+2</td><td>Y</td><td>Y座標 (0〜255)</td></tr>
+          <tr><td class="addr">+3</td><td>TILE</td><td>タイルID下位8bit</td></tr>
+          <tr><td class="addr">+4</td><td>ATTR</td><td>bit7:FLIP_H / bit6:FLIP_V / bit5:PRIORITY / bit4:TILE_HI / bit3-0:palette_bank(0-3)</td></tr>
+          <tr><td class="addr">+5</td><td>SIZE</td><td>00=8×8 / 01=16×16 / 10=16×32 / 11=32×32</td></tr>
+          <tr><td class="addr">+6</td><td>ANIM_CTRL</td><td>bit7:ANIM_EN / bit6-4:frame_count(1-8) / bit3-0:anim_speed</td></tr>
+          <tr><td class="addr">+7</td><td>ANIM_BASE</td><td>アニメーション開始タイルID</td></tr>
+        </tbody>
+      </table>
+
+      <div class="tip-box">
+        <strong>アニメーション：</strong> ANIM_EN=1 にするとハードウェアが自動的に TILE を ANIM_BASE から frame_count 枚ループさせます。anim_speed は 0=1fr毎 〜 15=16fr毎 に更新。CPUゼロオーバーヘッドでアニメーション可能。
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 BG スクロール -->
+  <section id="bg">
+    <div class="sec-header">
+      <span class="sec-num">06</span>
+      <span class="sec-title">BG スクロール</span>
+    </div>
+    <div class="sec-body">
+      <p>BG0/BG1 はそれぞれ独立してピクセル単位でスクロール可能です。タイルマップは 32×32 タイル（256×256px）で、スクロールするとラップアラウンドします。</p>
+
+      <div class="two-col" style="margin-top:16px;">
+        <div>
+          <h3>BG0 スクロールレジスタ</h3>
+          <table class="reg-table">
+            <thead><tr><th>アドレス</th><th>名称</th><th>範囲</th></tr></thead>
+            <tbody>
+              <tr><td class="raddr">0x0C20</td><td class="rname">BG0_SCX</td><td>0–255（X スクロール）</td></tr>
+              <tr><td class="raddr">0x0C21</td><td class="rname">BG0_SCY</td><td>0–255（Y スクロール）</td></tr>
+              <tr><td class="raddr">0x0C22</td><td class="rname">BG0_CTRL</td><td>bit0:ENABLE / bit1:TILE_BANK</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h3>BG1 スクロールレジスタ</h3>
+          <table class="reg-table">
+            <thead><tr><th>アドレス</th><th>名称</th><th>範囲</th></tr></thead>
+            <tbody>
+              <tr><td class="raddr">0x0C24</td><td class="rname">BG1_SCX</td><td>0–255（X スクロール）</td></tr>
+              <tr><td class="raddr">0x0C25</td><td class="rname">BG1_SCY</td><td>0–255（Y スクロール）</td></tr>
+              <tr><td class="raddr">0x0C26</td><td class="rname">BG1_CTRL</td><td>bit0:ENABLE / bit1:TILE_BANK</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <strong>視差スクロール例：</strong> BG1 を遠景（SCX を毎フレーム +0.5 相当で更新）、BG0 を近景（SCX +1）に使うことで視差効果が得られます。HBLANKタイミングで SCX を書き換えると波打ちエフェクトも可能。
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 I/Oレジスタ一覧 -->
+  <section id="registers">
+    <div class="sec-header">
+      <span class="sec-num">07</span>
+      <span class="sec-title">I/O レジスタ一覧</span>
+    </div>
+    <div class="sec-body">
+      <table class="reg-table">
+        <thead>
+          <tr><th>アドレス</th><th>名称</th><th>R/W</th><th>説明</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="raddr">0x0C00</td><td class="rname">ROM_BANK</td><td>W</td><td>ROM バンク切替 (0–15)</td></tr>
+          <tr><td class="raddr">0x0C01</td><td class="rname">SYS_CTRL</td><td>R/W</td><td>bit0:VBLANK_IRQ_EN / bit1:HBLANK_IRQ_EN / bit2:INPUT_IRQ_EN</td></tr>
+          <tr><td class="raddr">0x0C02</td><td class="rname">VBLANK_FLAG</td><td>R</td><td>bit0: VBLANK中=1。読み取りでクリア</td></tr>
+          <tr><td class="raddr">0x0C03</td><td class="rname">HBLANK_LINE</td><td>R/W</td><td>HBLANK 割り込み発生ライン (0–255)</td></tr>
+          <tr><td class="raddr">0x0C04</td><td class="rname">SCANLINE</td><td>R</td><td>現在描画中ライン (0–255)</td></tr>
+          <tr><td class="raddr">0x0C10</td><td class="rname">SPR_CTRL</td><td>W</td><td>bit0:ALL_ENABLE / bit1:CLIP_ENABLE</td></tr>
+          <tr><td class="raddr">0x0C11</td><td class="rname">SPR_HIT</td><td>R</td><td>スプライト0ヒットフラグ (読み取りでクリア)</td></tr>
+          <tr><td class="raddr">0x0C20</td><td class="rname">BG0_SCX</td><td>R/W</td><td>BG0 スクロール X</td></tr>
+          <tr><td class="raddr">0x0C21</td><td class="rname">BG0_SCY</td><td>R/W</td><td>BG0 スクロール Y</td></tr>
+          <tr><td class="raddr">0x0C22</td><td class="rname">BG0_CTRL</td><td>R/W</td><td>BG0 制御</td></tr>
+          <tr><td class="raddr">0x0C24</td><td class="rname">BG1_SCX</td><td>R/W</td><td>BG1 スクロール X</td></tr>
+          <tr><td class="raddr">0x0C25</td><td class="rname">BG1_SCY</td><td>R/W</td><td>BG1 スクロール Y</td></tr>
+          <tr><td class="raddr">0x0C26</td><td class="rname">BG1_CTRL</td><td>R/W</td><td>BG1 制御</td></tr>
+          <tr><td class="raddr">0x0C30</td><td class="rname">PAL_IDX</td><td>W</td><td>書き込みパレットインデックス</td></tr>
+          <tr><td class="raddr">0x0C31</td><td class="rname">PAL_R</td><td>W</td><td>パレット R 値 (0–255)</td></tr>
+          <tr><td class="raddr">0x0C32</td><td class="rname">PAL_G</td><td>W</td><td>パレット G 値</td></tr>
+          <tr><td class="raddr">0x0C33</td><td class="rname">PAL_B</td><td>W</td><td>パレット B 値（PAL_B書き込みでコミット）</td></tr>
+          <tr><td class="raddr">0x0C40</td><td class="rname">SND_CH0_FREQ_L</td><td>W</td><td>CH0 周波数下位 (矩形波1)</td></tr>
+          <tr><td class="raddr">0x0C41</td><td class="rname">SND_CH0_FREQ_H</td><td>W</td><td>CH0 周波数上位</td></tr>
+          <tr><td class="raddr">0x0C42</td><td class="rname">SND_CH0_VOL</td><td>W</td><td>CH0 音量 (0–15) / bit7:PLAY_EN</td></tr>
+          <tr><td class="raddr">0x0C43</td><td class="rname">SND_CH0_DUTY</td><td>W</td><td>デューティ比 00=12.5% 01=25% 10=50% 11=75%</td></tr>
+          <tr><td class="raddr">0x0C44–0x0C47</td><td class="rname">SND_CH1_*</td><td>W</td><td>CH1 矩形波2 (同形式)</td></tr>
+          <tr><td class="raddr">0x0C48–0x0C4A</td><td class="rname">SND_CH2_*</td><td>W</td><td>CH2 三角波 (FREQ_L/H/VOL)</td></tr>
+          <tr><td class="raddr">0x0C4B–0x0C4C</td><td class="rname">SND_CH3_*</td><td>W</td><td>CH3 ノイズ (PERIOD/VOL)</td></tr>
+          <tr><td class="raddr">0x0C50</td><td class="rname">SND_MASTER</td><td>W</td><td>マスター音量 (0–15)</td></tr>
+          <tr><td class="raddr">0x0C60</td><td class="rname">INPUT_P1</td><td>R</td><td>コントローラー1 (後述)</td></tr>
+          <tr><td class="raddr">0x0C61</td><td class="rname">INPUT_P2</td><td>R</td><td>コントローラー2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 08 命令セット -->
+  <section id="instructions">
+    <div class="sec-header">
+      <span class="sec-num">08</span>
+      <span class="sec-title">命令セット（48命令）</span>
+    </div>
+    <div class="sec-body">
+      <p>全命令 2〜4 バイト固定長。バイト1（オペコード）で命令種別を一意決定。</p>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+        <span class="tag tag-cpu">CPU / 制御</span>
+        <span class="tag tag-gfx">演算 / データ転送</span>
+        <span class="tag tag-snd">分岐 / スタック</span>
+        <span class="tag tag-io">I/O 操作</span>
+      </div>
+
+      <h3>データ転送・ロード系</h3>
+      <div class="inst-grid">
+        <div class="inst-row"><span class="inst-mn">LD r, imm</span><span class="inst-desc">レジスタ r に即値をロード</span><span class="inst-op">0x10</span></div>
+        <div class="inst-row"><span class="inst-mn">LD r, [addr]</span><span class="inst-desc">メモリからレジスタへ</span><span class="inst-op">0x11</span></div>
+        <div class="inst-row"><span class="inst-mn">LD [addr], r</span><span class="inst-desc">レジスタからメモリへ</span><span class="inst-op">0x12</span></div>
+        <div class="inst-row"><span class="inst-mn">LD r, [HL]</span><span class="inst-desc">HL間接ロード</span><span class="inst-op">0x13</span></div>
+        <div class="inst-row"><span class="inst-mn">LD [HL], r</span><span class="inst-desc">HL間接ストア</span><span class="inst-op">0x14</span></div>
+        <div class="inst-row"><span class="inst-mn">LD r, r2</span><span class="inst-desc">レジスタ間転送</span><span class="inst-op">0x15</span></div>
+        <div class="inst-row"><span class="inst-mn">LDI [HL], r</span><span class="inst-desc">HL間接ストアしてHL++</span><span class="inst-op">0x16</span></div>
+        <div class="inst-row"><span class="inst-mn">LDD [HL], r</span><span class="inst-desc">HL間接ストアしてHL--</span><span class="inst-op">0x17</span></div>
+      </div>
+
+      <h3>演算系</h3>
+      <div class="inst-grid">
+        <div class="inst-row"><span class="inst-mn">ADD A, r</span><span class="inst-desc">A = A + r</span><span class="inst-op">0x20</span></div>
+        <div class="inst-row"><span class="inst-mn">ADD A, imm</span><span class="inst-desc">A = A + 即値</span><span class="inst-op">0x21</span></div>
+        <div class="inst-row"><span class="inst-mn">ADC A, r</span><span class="inst-desc">A = A + r + C フラグ</span><span class="inst-op">0x22</span></div>
+        <div class="inst-row"><span class="inst-mn">SUB A, r</span><span class="inst-desc">A = A - r</span><span class="inst-op">0x23</span></div>
+        <div class="inst-row"><span class="inst-mn">SBC A, r</span><span class="inst-desc">A = A - r - C フラグ</span><span class="inst-op">0x24</span></div>
+        <div class="inst-row"><span class="inst-mn">INC r</span><span class="inst-desc">r++</span><span class="inst-op">0x25</span></div>
+        <div class="inst-row"><span class="inst-mn">DEC r</span><span class="inst-desc">r--</span><span class="inst-op">0x26</span></div>
+        <div class="inst-row"><span class="inst-mn">AND A, r</span><span class="inst-desc">A = A & r</span><span class="inst-op">0x27</span></div>
+        <div class="inst-row"><span class="inst-mn">OR A, r</span><span class="inst-desc">A = A | r</span><span class="inst-op">0x28</span></div>
+        <div class="inst-row"><span class="inst-mn">XOR A, r</span><span class="inst-desc">A = A ^ r</span><span class="inst-op">0x29</span></div>
+        <div class="inst-row"><span class="inst-mn">NOT A</span><span class="inst-desc">A = ~A</span><span class="inst-op">0x2A</span></div>
+        <div class="inst-row"><span class="inst-mn">SHL A, imm</span><span class="inst-desc">左シフト</span><span class="inst-op">0x2B</span></div>
+        <div class="inst-row"><span class="inst-mn">SHR A, imm</span><span class="inst-desc">右シフト（論理）</span><span class="inst-op">0x2C</span></div>
+        <div class="inst-row"><span class="inst-mn">CMP A, r</span><span class="inst-desc">A - r（フラグのみ更新）</span><span class="inst-op">0x2D</span></div>
+        <div class="inst-row"><span class="inst-mn">MUL A, r</span><span class="inst-desc">A = A × r（下位8bit）</span><span class="inst-op">0x2E</span></div>
+        <div class="inst-row"><span class="inst-mn">DIV A, r</span><span class="inst-desc">A = A / r, B = 余り</span><span class="inst-op">0x2F</span></div>
+      </div>
+
+      <h3>分岐・制御系</h3>
+      <div class="inst-grid">
+        <div class="inst-row"><span class="inst-mn">JMP addr</span><span class="inst-desc">無条件ジャンプ</span><span class="inst-op">0x30</span></div>
+        <div class="inst-row"><span class="inst-mn">JMP [HL]</span><span class="inst-desc">間接ジャンプ</span><span class="inst-op">0x31</span></div>
+        <div class="inst-row"><span class="inst-mn">JZ addr</span><span class="inst-desc">Z=1 なら分岐</span><span class="inst-op">0x32</span></div>
+        <div class="inst-row"><span class="inst-mn">JNZ addr</span><span class="inst-desc">Z=0 なら分岐</span><span class="inst-op">0x33</span></div>
+        <div class="inst-row"><span class="inst-mn">JC addr</span><span class="inst-desc">C=1 なら分岐</span><span class="inst-op">0x34</span></div>
+        <div class="inst-row"><span class="inst-mn">JNC addr</span><span class="inst-desc">C=0 なら分岐</span><span class="inst-op">0x35</span></div>
+        <div class="inst-row"><span class="inst-mn">JN addr</span><span class="inst-desc">N=1 (負) なら分岐</span><span class="inst-op">0x36</span></div>
+        <div class="inst-row"><span class="inst-mn">JV addr</span><span class="inst-desc">V=1 (オーバーフロー) なら分岐</span><span class="inst-op">0x37</span></div>
+        <div class="inst-row"><span class="inst-mn">CALL addr</span><span class="inst-desc">サブルーチン呼び出し</span><span class="inst-op">0x38</span></div>
+        <div class="inst-row"><span class="inst-mn">RET</span><span class="inst-desc">サブルーチンから戻る</span><span class="inst-op">0x39</span></div>
+        <div class="inst-row"><span class="inst-mn">RETI</span><span class="inst-desc">割り込みから戻る</span><span class="inst-op">0x3A</span></div>
+        <div class="inst-row"><span class="inst-mn">NOP</span><span class="inst-desc">何もしない (1サイクル)</span><span class="inst-op">0x00</span></div>
+        <div class="inst-row"><span class="inst-mn">HALT</span><span class="inst-desc">次の割り込みまで停止</span><span class="inst-op">0x01</span></div>
+        <div class="inst-row"><span class="inst-mn">DI</span><span class="inst-desc">割り込み無効</span><span class="inst-op">0x02</span></div>
+        <div class="inst-row"><span class="inst-mn">EI</span><span class="inst-desc">割り込み有効</span><span class="inst-op">0x03</span></div>
+      </div>
+
+      <h3>スタック操作</h3>
+      <div class="inst-grid">
+        <div class="inst-row"><span class="inst-mn">PUSH r</span><span class="inst-desc">スタックに push</span><span class="inst-op">0x40</span></div>
+        <div class="inst-row"><span class="inst-mn">POP r</span><span class="inst-desc">スタックから pop</span><span class="inst-op">0x41</span></div>
+        <div class="inst-row"><span class="inst-mn">PUSH F</span><span class="inst-desc">フラグレジスタ push</span><span class="inst-op">0x42</span></div>
+        <div class="inst-row"><span class="inst-mn">POP F</span><span class="inst-desc">フラグレジスタ pop</span><span class="inst-op">0x43</span></div>
+      </div>
+
+      <h3>I/O 専用命令</h3>
+      <div class="inst-grid">
+        <div class="inst-row"><span class="inst-mn">IN A, port</span><span class="inst-desc">I/Oポート読み込み (A ← [port])</span><span class="inst-op">0x50</span></div>
+        <div class="inst-row"><span class="inst-mn">OUT port, A</span><span class="inst-desc">I/Oポート書き込み ([port] ← A)</span><span class="inst-op">0x51</span></div>
+        <div class="inst-row"><span class="inst-mn">WAIT_VBL</span><span class="inst-desc">VBLANK まで HALT (HALT + VBL簡易版)</span><span class="inst-op">0x52</span></div>
+      </div>
+
+      <div style="margin-top:16px;padding:12px 16px;background:rgba(0,229,255,0.04);border:1px solid var(--border);">
+        <span style="color:var(--accent);font-size:12px;">合計：8 + 16 + 15 + 4 + 3 = </span>
+        <span style="color:#fff;font-size:20px;font-weight:700;">46</span>
+        <span style="color:var(--dim);font-size:12px;"> 命令（50命令以下）</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 サウンド -->
+  <section id="sound">
+    <div class="sec-header">
+      <span class="sec-num">09</span>
+      <span class="sec-title">サウンド</span>
+    </div>
+    <div class="sec-body">
+      <p>4チャンネル構成。全チャンネルはレジスタ直接書き込みで制御します。エンベロープ・LFOは非搭載（シンプル設計のため）。</p>
+
+      <div class="spec-grid" style="margin-top:16px;">
+        <div class="spec-card">
+          <div class="spec-label">CH0 / CH1</div>
+          <div class="spec-value" style="font-size:16px;color:var(--accent2);">矩形波 × 2</div>
+          <div class="spec-sub">11bit 周波数 / デューティ比 4種 / 音量 16段階</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">CH2</div>
+          <div class="spec-value" style="font-size:16px;color:var(--accent3);">三角波 × 1</div>
+          <div class="spec-sub">11bit 周波数 / 音量固定（物理的に音量変化なし）</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">CH3</div>
+          <div class="spec-value" style="font-size:16px;color:#c8a0ff;">ノイズ × 1</div>
+          <div class="spec-sub">7段階 周期 / 音量 16段階 / 効果音向け</div>
+        </div>
+        <div class="spec-card">
+          <div class="spec-label">サンプリング</div>
+          <div class="spec-value" style="font-size:16px;">44.1<span class="spec-unit">kHz</span></div>
+          <div class="spec-sub">ホスト側でリアルタイム合成</div>
+        </div>
+      </div>
+
+      <h3>周波数計算</h3>
+      <p>CH0/1/2 共通：<code>f = CPU_CLOCK / (32 × (2048 - freq_reg))</code></p>
+      <p>例：A4 (440Hz) → freq_reg = 2048 - (4,000,000 / (32 × 440)) ≈ <strong>1764</strong></p>
+
+      <div class="tip-box">
+        <strong>エミュレーター実装のヒント：</strong> 44100Hzでサンプルを生成する場合、1サンプルあたり CPU_CLOCK/44100 ≈ 90.7 サイクルごとに各チャンネルの波形を1ステップ進めると正確に再現できます。
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 入力 -->
+  <section id="input">
+    <div class="sec-header">
+      <span class="sec-num">10</span>
+      <span class="sec-title">コントローラー入力</span>
+    </div>
+    <div class="sec-body">
+      <p>INPUT_P1 (<code>0x0C60</code>) / INPUT_P2 (<code>0x0C61</code>) を読み取るだけ。各ビットが押された状態で 1。</p>
+      <table class="reg-table" style="max-width:500px;">
+        <thead><tr><th>ビット</th><th>ボタン</th></tr></thead>
+        <tbody>
+          <tr><td class="raddr">7</td><td class="rname">↑（上）</td></tr>
+          <tr><td class="raddr">6</td><td class="rname">↓（下）</td></tr>
+          <tr><td class="raddr">5</td><td class="rname">←（左）</td></tr>
+          <tr><td class="raddr">4</td><td class="rname">→（右）</td></tr>
+          <tr><td class="raddr">3</td><td class="rname">A ボタン</td></tr>
+          <tr><td class="raddr">2</td><td class="rname">B ボタン</td></tr>
+          <tr><td class="raddr">1</td><td class="rname">SELECT</td></tr>
+          <tr><td class="raddr">0</td><td class="rname">START</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 11 ブートシーケンス -->
+  <section id="boot">
+    <div class="sec-header">
+      <span class="sec-num">11</span>
+      <span class="sec-title">ブートシーケンス / エミュレーター実装メモ</span>
+    </div>
+    <div class="sec-body">
+      <div class="two-col">
+        <div>
+          <h3>ブート手順</h3>
+          <ol style="padding-left:18px;color:var(--text);line-height:2.2;">
+            <li>全メモリをゼロクリア</li>
+            <li>パレット RAM をデフォルト32色で初期化</li>
+            <li>SP = 0x01FF に設定</li>
+            <li>PC = 0x8000（ROM バンク0 先頭）にジャンプ</li>
+            <li>割り込みを有効化</li>
+          </ol>
+        </div>
+        <div>
+          <h3>エミュレーターの最小ループ</h3>
+          <pre style="background:#050810;border:1px solid var(--border);padding:14px;font-size:12px;color:#8ab;overflow-x:auto;">
+while(running) {
+  // 1. CPU フェッチ・デコード・実行
+  cycles += exec(fetch(PC));
+
+  // 2. PPU: HBLANK カウンタ更新
+  if (++scanline >= 256) {
+    scanline = 0;
+    // VBLANK 割り込み
+    trigger_irq(IRQ_VBLANK);
+    render_frame();
+  }
+
+  // 3. APU: サウンドバッファ生成
+  apu_step(cycles);
+}</pre>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <strong>実装難易度：</strong> 命令デコードはバイト1の上位4bitでグループを確定 → 下位4bitで詳細命令を確定する2段階テーブルで実装可能。PPUはスキャンライン駆動でOAMを線形スキャンするだけ。APUは4チャンネルの独立カウンタ。エミュレーター全体は C 言語で約 1500〜2000 行で書けるよう設計されています。
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div style="color:var(--accent);letter-spacing:0.2em;margin-bottom:8px;">RETRO-8 FANTASY CONSOLE</div>
+  <div>Technical Specification v1.0 — Designed for simplicity, hackability, and emulator-friendliness.</div>
+  <div style="margin-top:8px;font-size:11px;color:#2a3a4a;">This specification is fictional and intended for educational / game jam use.</div>
+</footer>
+
 </body>
 </html>
